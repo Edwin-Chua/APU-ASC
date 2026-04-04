@@ -1,0 +1,146 @@
+Readme
+
+PROJECT: APU Automotive Service Centre (APU-ASC)
+Java Swing GUI application. No database — all data stored in .txt files.
+Window size: 1200x800. Single JFrame, CardLayout for role switching.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROLES (4 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Manager
+- Counter Staff
+- Technician
+- Customer
+
+Each role has its own login and its own dashboard.
+Login determines which dashboard to show (role-based access enforced at login).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NAVIGATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MainFrame (1200x800, single JFrame)
+│
+├── Outer CardLayout (full-screen swap)
+│   ├── LoginPage          ← no sidebar, full screen
+│   ├── ManagerDashboard
+│   ├── CounterStaffDashboard
+│   ├── TechnicianDashboard
+│   └── CustomerDashboard
+│
+Each Dashboard (extends BaseDashboard):
+├── Sidebar (WEST)         ← nav buttons + logout
+└── ContentPanel (CENTER)  ← inner CardLayout for sub-pages
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+src/
+├── application/
+│   └── Main.java
+│
+├── models/
+│   ├── entities/
+│   │   ├── User.java              ← base class (id, name, email, password, role)
+│   │   ├── Manager.java           ← extends User
+│   │   ├── CounterStaff.java      ← extends User
+│   │   ├── Technician.java        ← extends User
+│   │   ├── Customer.java          ← extends User (+ phone, address, registeredDate)
+│   │   ├── Appointment.java
+│   │   ├── Service.java
+│   │   ├── Billing.java           ← invoice/what is owed
+│   │   ├── Payment.java           ← actual transaction record
+│   │   ├── Feedback.java
+│   │   └── Report.java
+│   │
+│   └── dao/
+│       ├── UserDAO.java           ← searches all 4 role files, returns correct subtype
+│       ├── AppointmentDAO.java
+│       ├── ServiceDAO.java
+│       ├── BillingDAO.java
+│       ├── PaymentDAO.java
+│       ├── FeedbackDAO.java
+│       └── ReportDAO.java
+│
+├── views/
+│   ├── shared/
+│   │   ├── AppTheme.java       ← colors, fonts, dimensions
+│   │   ├── UIComponent.java         ← factory methods: buttons, cards, fields, etc.
+│   │   └── BaseDashboard.java     ← abstract class: sidebar + contentPanel + refreshUser()
+│   │
+│   ├── MainFrame.java             ← single JFrame, hosts outer CardLayout
+│   ├── LoginPage.java
+│   │
+│   ├── manager/
+│   │   ├── ManagerDashboard.java  ← extends BaseDashboard
+│   │   └── (sub-pages TBD)
+│   │
+│   ├── counterstaff/
+│   │   ├── CounterStaffDashboard.java
+│   │   └── (sub-pages TBD)
+│   │
+│   ├── technician/
+│   │   ├── TechnicianDashboard.java
+│   │   └── (sub-pages TBD)
+│   │
+│   └── customer/
+│       ├── CustomerDashboard.java
+│       └── (sub-pages TBD)
+│
+└── txtFile/
+    ├── manager.txt
+    ├── staff.txt
+    ├── technician.txt
+    ├── customer.txt
+    ├── appointment.txt
+    ├── service.txt
+    ├── billing.txt
+    ├── payment.txt
+    ├── feedback.txt
+    └── report.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY OOP PATTERNS USED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Inheritance:    Manager/Customer/etc. extend User
+                  All dashboards extend BaseDashboard
+- Abstraction:    BaseDashboard declares abstract createSidebar(),
+                  createContentPanel(), refreshUser()
+- Encapsulation:  All entity fields private, accessed via getters/setters
+- Shared UI:      AppTheme (design tokens) + UIComponent (component factory)
+                  used across all views — no hardcoded colors/fonts
+- Error handling:  try-with-resources / try-catch for file I/O in DAOs;
+                     user-facing messages via JOptionPane where appropriate
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATA LAYER NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- No database. All persistence via .txt files (CSV-style).
+- Each DAO handles one .txt file (except UserDAO which handles all 4 role files).
+- UserDAO.loginUser(email, password) searches all 4 role files,
+  returns the correct User subtype (Manager, Customer, etc.)
+- Billing = invoice (what is owed). Payment = transaction (how it was paid).
+  One Billing links to one Payment.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SHARED UI SYSTEM (views/shared/)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AppTheme.java  — single source of truth for all visual tokens:
+  colors (brand, background, sidebar, text, border)
+  fonts (headings h1–h4, body, small, label, sidebar)
+  dimensions (field size, button size, sidebar width, header height)
+
+UIComponent.java    — static factory methods for all reusable components:
+  createPrimaryButton(text)
+  createOutlineButton(text)
+  createCard()
+  createTextField(placeholder)
+  createPasswordField()
+  createFieldLabel(text)
+  createSidebarButton(text)
+  (+ any others needed per role)
+
+BaseDashboard.java — abstract JPanel:
+  All 4 role dashboards extend this.
+  Constructor calls createSidebar() + createContentPanel() automatically.
+  refreshUser() is called by MainFrame after every showPage() to push
+  the logged-in user's data into the dashboard labels.

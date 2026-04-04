@@ -1,0 +1,3 @@
+UserID|username|password|role|createdDate
+T001|admin|admin123|Technician|2024-01-01
+T002|john|pass456|Technician|2024-02-15

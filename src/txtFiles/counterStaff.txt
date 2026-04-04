@@ -1,0 +1,3 @@
+UserID|username|password|role|createdDate
+S001|staff|staff123|Staff|2024-01-01
+S002|john|pass456|Staff|2024-02-15

@@ -1,0 +1,6 @@
+UserID|username|password|contactNum|email|role|status|createdDate
+C001|alice|alice123|0123456789|alice@email.com|Customer|Approved|2024-01-10
+C002|bob|bob123|0198765432|bob@email.com|Customer|Approved|2024-03-01
+C004|jack|jack1234|01234567890|jack@gmail.com|Customer|Approved|2026-04-04
+C005|jack|jack1234|01234567890|j@gmail.com|Customer|Pending|2026-04-04
+C006|ben|ben12345|01234567890|ben@gmail.com|Customer|Pending|2026-04-04
