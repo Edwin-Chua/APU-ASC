@@ -17,7 +17,7 @@ public class ManagerDashboard extends BaseDashboard {
     private static final String PAGE_REPORTS   = "reports";
     private static final String PAGE_PROFILE   = "profile";
 
-    private final CardLayout innerCardLayout = new CardLayout();
+    // private final CardLayout innerCardLayout = new CardLayout();
     private JPanel contentPanel;
 
     private JButton btnEmployees;
@@ -78,7 +78,7 @@ public class ManagerDashboard extends BaseDashboard {
 
     @Override
     protected JPanel createContentPanel() {
-        contentPanel = new JPanel(innerCardLayout);
+        contentPanel = new JPanel(new CardLayout());   // ← new CardLayout() inline
         contentPanel.setBackground(AppTheme.BG_CONTENT);
         return contentPanel;
     }

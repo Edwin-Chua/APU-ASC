@@ -99,7 +99,15 @@ public final class AppTheme {
     public static final int PADDING_ROW           = 13;   // info row top/bottom padding
     public static final int GAP_SECTION           = 24;   // vertical gap between sections
     public static final int GAP_ITEM              = 12;   // vertical gap between list items
+
     // ─── Component-specific constants ────────────────────────────────────────
     public static final int INFO_LABEL_WIDTH      = 140;  // fixed width for label column in info rows
     public static final int NAV_INDICATOR_WIDTH   = 4;    // left border thickness for active nav item
+
+    // ─── Scrollbar (Apple-like) ───────────────────────────────────────────────
+    public static final Color SCROLL_TRACK        = new Color(0, 0, 0, 0);      // transparent
+    public static final Color SCROLL_THUMB        = new Color(60, 60, 67, 70);  // subtle gray
+    public static final Color SCROLL_THUMB_HOVER  = new Color(60, 60, 67, 110); // darker on hover
+    public static final int   SCROLL_BAR_WIDTH    = 8;
+    public static final int   SCROLL_THUMB_RADIUS = 8;
 }

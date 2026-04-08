@@ -89,6 +89,7 @@ public class UserDAO {
     }
 
     // ─── Staff parser：username 登录 ─────────────────────────────────────────
+    //Used for Manager, CounterStaff, and Technician
     // Format: UserID|username|password|role|createdDate
 
     private User parseStaff(String[] parts, String username, String password, String role) {
@@ -128,6 +129,7 @@ public class UserDAO {
     }
 
     // ─── Customer parser：username 登录 ──────────────────────────────────────
+    //Used for Customer ONLY
     // Format: UserID|username|password|contactNum|email|role|status|createdDate
 
     private User parseCustomerByUsername(String[] parts, String username, String password) {
@@ -160,6 +162,58 @@ public class UserDAO {
             case "Technician":   return "technician.txt";
             case "Customer":     return "customer.txt";
             default:             return null;
+        }
+    }
+
+
+    // ─── Staffs Update Profiles  ──────────────────────────────────────────────────
+    // Used for Manager, CounterStaff, and Technician
+
+    public boolean updateStaffLikeUsername(String role, String userId, String newUsername) {
+        return updateStaffLikeField(role, userId, 1, newUsername);
+    }
+    
+    public boolean updateStaffLikePassword(String role, String userId, String newPassword) {
+        return updateStaffLikeField(role, userId, 2, newPassword);
+    }
+    
+    private boolean updateStaffLikeField(String role, String userId, int colIndex, String newValue) {
+        // only roles with format: UserID|username|password|role|createdDate
+        if (!"Manager".equals(role) && !"CounterStaff".equals(role) && !"Technician".equals(role)) {
+            return false;
+        }
+    
+        String fileName = getFileByRole(role);
+        if (fileName == null) return false;
+    
+        Path path = Paths.get(BASE_PATH + fileName);
+        try {
+            java.util.List<String> lines = Files.readAllLines(path);
+            java.util.List<String> updated = new java.util.ArrayList<>();
+            boolean found = false;
+    
+            for (String line : lines) {
+                if (line.trim().isEmpty() || line.toLowerCase().startsWith("userid")) {
+                    updated.add(line);
+                    continue;
+                }
+    
+                String[] parts = line.split("\\|", -1);
+                if (parts.length > colIndex && parts[0].trim().equals(userId)) {
+                    parts[colIndex] = newValue;
+                    updated.add(String.join("|", parts));
+                    found = true;
+                } else {
+                    updated.add(line);
+                }
+            }
+    
+            if (!found) return false;
+            Files.write(path, updated);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }
