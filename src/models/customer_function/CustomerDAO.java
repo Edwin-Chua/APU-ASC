@@ -1,4 +1,4 @@
-package customer_function;
+package models.customer_function;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.List;
 
 public class CustomerDAO {
 
-    private static final String FILE_PATH = "/Users/jellyfish/Desktop/AI Y2S1/OOP/JAVA ASSIGNMENT/Java-Car-Service-System/JAVA ASSIGNMENT/src/customer_data/customer.txt";
+    private static final String FILE_PATH = "src/txtFiles/customer.txt";
 
     public List<Customer> getAllCustomers() {
         List<Customer> list = new ArrayList<>();
@@ -161,6 +161,48 @@ public class CustomerDAO {
         } else {
             System.out.println("Customer not found: " + customerID);
             return false;
+        }
+    }
+
+    public String registerCustomer(String username, String password, String contactNum, String email) {
+        if (isEmailExists(email)) {
+            return "This email is already registered. Please use a different email.";
+        }
+
+        String newID = generateCustomerID();
+        String registeredDate = java.time.LocalDate.now().toString();
+
+        List<String> rawLines = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                rawLines.add(line);
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            return "Registration failed due to a system error. Please try again.";
+        }
+
+        String newLine = newID        + "|"
+                + username            + "|"
+                + password            + "|"
+                + contactNum          + "|"
+                + email               + "|"
+                + "Customer"          + "|"
+                + "Pending"           + "|"
+                + registeredDate;
+
+        rawLines.add(newLine);
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
+            for (String l : rawLines) {
+                bw.write(l);
+                bw.newLine();
+            }
+            return null; // null = 成功
+        } catch (IOException e) {
+            System.err.println("Cannot write to customer.txt: " + e.getMessage());
+            return "Registration failed due to a system error. Please try again.";
         }
     }
 }

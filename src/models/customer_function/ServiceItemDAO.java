@@ -1,11 +1,11 @@
-package customer_function;
+package models.customer_function;
 
 import java.io.*;
 import java.util.*;
 
 public class ServiceItemDAO {
 
-    private static final String FILE_PATH = "/Users/jellyfish/Desktop/AI Y2S1/OOP/JAVA ASSIGNMENT/Java-Car-Service-System/JAVA ASSIGNMENT/src/customer_data/service_items.txt";
+    private static final String FILE_PATH = "src/txtFiles/service_items.txt";
 
     public List<ServiceItem> getAllServiceItems() {
         List<ServiceItem> list = new ArrayList<>();

@@ -1,3 +1,4 @@
-UserID|username|password|role|createdDate
-T001|admin|admin123|Technician|2024-01-01
-T002|john|pass456|Technician|2024-02-15
+T001|Ahmad bin Rodzi|ahmad@autoserve.com|tech123|Active|General Service
+T002|Lim Wei Jian|lim@autoserve.com|tech456|Active|Engine Specialist
+T003|Muthu Krishnan|muthu@autoserve.com|tech789|Active|Electrical System
+T004|Siti Nurhaliza|siti@autoserve.com|tech321|Active|Body & Paint

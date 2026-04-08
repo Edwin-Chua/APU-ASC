@@ -4,6 +4,7 @@ import models.entities.User;
 import views.shared.AppTheme;
 import views.shared.BaseDashboard;
 import views.customer.CustomerRegisterPage;
+import views.customer.CustomerPortal;
 import views.manager.ManagerDashboard;
 
 import javax.swing.*;
@@ -18,13 +19,11 @@ public class MainFrame extends JFrame {
     public static final String PAGE_COUNTERSTAFF = "counterstaff";
     public static final String PAGE_TECHNICIAN   = "technician";
     public static final String PAGE_CUSTOMER     = "customer";
-    public static final String PAGE_REGISTER = "register";
-
+    public static final String PAGE_REGISTER     = "register";
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainPanel = new JPanel(cardLayout);
     private final Map<String, JPanel> pages = new HashMap<>();
-
     private User loggedInUser;
 
     public MainFrame() {
@@ -33,26 +32,34 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(1000, 650));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
         getContentPane().setBackground(AppTheme.BG_PAGE);
         mainPanel.setBackground(AppTheme.BG_PAGE);
-        addPage(PAGE_REGISTER, new CustomerRegisterPage(this));
 
-
-        // ─── Register each full-screen card ───────────────────────────────
-        addPage(PAGE_LOGIN, new LoginPage(this));
-
-        // TODO: replace placeholders with real dashboards (extends BaseDashboard)
-        addPage(PAGE_MANAGER, new ManagerDashboard(this));
+        addPage(PAGE_REGISTER,     new CustomerRegisterPage(this));
+        addPage(PAGE_LOGIN,        new LoginPage(this));
+        addPage(PAGE_MANAGER,      new ManagerDashboard(this));
         addPage(PAGE_COUNTERSTAFF, placeholder("Counter Staff Dashboard"));
         addPage(PAGE_TECHNICIAN,   placeholder("Technician Dashboard"));
-        addPage(PAGE_CUSTOMER,     placeholder("Customer Dashboard"));
 
         add(mainPanel, BorderLayout.CENTER);
         showPage(PAGE_LOGIN);
     }
 
-    /** Temporary panel until each role dashboard is implemented. */
+    /** Dynamically creates and shows a CustomerPortal for the given customerID. */
+    public void showCustomerPage(String customerID) {
+        // Remove old customer panel if it exists
+        JPanel old = pages.get(PAGE_CUSTOMER);
+        if (old != null) {
+            mainPanel.remove(old);
+            pages.remove(PAGE_CUSTOMER);
+        }
+
+        // Create fresh portal with the real customerID
+        CustomerPortal portal = new CustomerPortal(this, customerID);
+        addPage(PAGE_CUSTOMER, portal);
+        cardLayout.show(mainPanel, PAGE_CUSTOMER);
+    }
+
     private JPanel placeholder(String title) {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(AppTheme.BG_PAGE);
@@ -68,13 +75,8 @@ public class MainFrame extends JFrame {
         mainPanel.add(page, key);
     }
 
-    /**
-     * Switches the outer card. If the target is a {@link BaseDashboard},
-     * calls {@code refreshUser()} so labels update from {@link #loggedInUser}.
-     */
     public void showPage(String page) {
         cardLayout.show(mainPanel, page);
-
         JPanel target = pages.get(page);
         if (target instanceof BaseDashboard) {
             ((BaseDashboard) target).refreshUser();

@@ -1,4 +1,4 @@
-package customer_function;
+package models.customer_function;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TechnicianDAO {
-    private static final String FILE_PATH = "/Users/jellyfish/Desktop/AI Y2S1/OOP/JAVA ASSIGNMENT/Java-Car-Service-System/JAVA ASSIGNMENT/src/customer_data/technician.txt";
+    private static final String FILE_PATH = "src/txtFiles/technicians.txt";
 
     public List<Technician> getAllTechnicianList() {
         List<Technician> techList = new ArrayList<>();

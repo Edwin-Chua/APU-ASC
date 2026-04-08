@@ -1,15 +1,14 @@
 package views.customer;
 
-import models.dao.CustomerDAO;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.*;
+import models.customer_function.CustomerDAO;
 import models.entities.CustomerRegister;
 import views.MainFrame;
 import views.shared.AppTheme;
 import views.shared.UIComponent;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class CustomerRegisterPage extends JPanel {
 

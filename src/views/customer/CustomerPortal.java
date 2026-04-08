@@ -1,6 +1,5 @@
-package customer_ui;
+package views.customer;
 
-import customer_function.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,19 +7,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.swing.*;
+import models.customer_function.*;
+import views.MainFrame;
 
-public class CustomerPortal extends JFrame {
+public class CustomerPortal extends JPanel {
+
+    private final MainFrame frame;      // ← 用于 logout 跳回登录页
 
     private CardLayout cardLayout;
     private JPanel contentPanel;
     private JButton activeButton = null;
 
-    private String customerID = "C002";
+    private String customerID;          // ← 从登录传入，不再硬编码
 
-    private CustomerDAO customerDAO = new CustomerDAO();
+    private CustomerDAO customerDAO       = new CustomerDAO();
     private AppointmentDAO appointmentDAO = new AppointmentDAO();
-    private TechnicianDAO technicianDAO = new TechnicianDAO();
-    private FeedbackDAO feedbackDAO = new FeedbackDAO();
+    private TechnicianDAO technicianDAO   = new TechnicianDAO();
+    private FeedbackDAO feedbackDAO       = new FeedbackDAO();
     private ServiceItemDAO serviceItemDAO = new ServiceItemDAO();
 
     private Customer customer;
@@ -33,23 +36,19 @@ public class CustomerPortal extends JFrame {
     private JButton navMakeAppointmentBtn;
     private JButton navProfileBtn;
 
-    public CustomerPortal() {
+    public CustomerPortal(MainFrame frame, String customerID) {
+        this.frame      = frame;
+        this.customerID = customerID;
+
         customer = customerDAO.getCustomerByID(customerID);
         upcoming = appointmentDAO.getUpcomingAppointmentByCustomerID(customerID);
 
-        setTitle("Automotive Service Centre – Customer Portal");
-        setSize(1200, 800);
-        setMinimumSize(new Dimension(1000, 650));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
         add(createHeader(), BorderLayout.NORTH);
         add(createMainArea(), BorderLayout.CENTER);
         add(createStatusBar(), BorderLayout.SOUTH);
-
-        setLocationRelativeTo(null);
-        setVisible(true);
     }
 
     // ─── HEADER ──────────────────────────────────────────────────────────────
@@ -426,10 +425,10 @@ public class CustomerPortal extends JFrame {
         gbc.insets = new Insets(12, 12, 12, 12);
         gbc.anchor = GridBagConstraints.WEST;
 
-        JTextField brandField    = createTextField("e.g. Honda, Toyota");
-        JTextField modelField    = createTextField("e.g. Civic, Vios");
-        JTextField plateField    = createTextField("e.g. WAB 1234");
-        JTextField commandField  = createTextField("e.g. Please check brakes too");
+        JTextField brandField   = createTextField("e.g. Honda, Toyota");
+        JTextField modelField   = createTextField("e.g. Civic, Vios");
+        JTextField plateField   = createTextField("e.g. WAB 1234");
+        JTextField commandField = createTextField("e.g. Please check brakes too");
 
         List<ServiceItem> allItems = serviceItemDAO.getAllServiceItems();
         Set<String> categorySet = new HashSet<>();
@@ -883,12 +882,9 @@ public class CustomerPortal extends JFrame {
         return data;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // ─── PROFILE PAGE — Apple ID Web Style ───────────────────────────────────
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ─── PROFILE PAGE ────────────────────────────────────────────────────────
 
     private JPanel createProfilePage() {
-        // Apple-style colour palette
         Color pageBg       = new Color(244, 244, 249);
         Color cardBg       = Color.WHITE;
         Color separatorClr = new Color(230, 230, 235);
@@ -910,7 +906,6 @@ public class CustomerPortal extends JFrame {
         content.setBackground(pageBg);
         content.setBorder(BorderFactory.createEmptyBorder(30, 80, 40, 80));
 
-        // Data labels
         JLabel avatarLabel  = new JLabel();
         JLabel headerName   = new JLabel();
         JLabel headerDetail = new JLabel();
@@ -921,13 +916,11 @@ public class CustomerPortal extends JFrame {
         JLabel viewAddr     = new JLabel();
         JLabel viewDate     = new JLabel();
 
-        // Edit fields
         JTextField editName  = createAppleField();
         JTextField editEmail = createAppleField();
         JTextField editPhone = createAppleField();
         JTextField editAddr  = createAppleField();
 
-        // Load data
         Runnable loadData = () -> {
             customer = customerDAO.getCustomerByID(customerID);
             if (customer != null) {
@@ -951,7 +944,6 @@ public class CustomerPortal extends JFrame {
         };
         loadData.run();
 
-        // CardLayout: VIEW / EDIT
         CardLayout profileCards = new CardLayout();
         JPanel cPanel = new JPanel(profileCards);
         cPanel.setOpaque(false);
@@ -962,7 +954,6 @@ public class CustomerPortal extends JFrame {
         viewMode.setLayout(new BoxLayout(viewMode, BoxLayout.Y_AXIS));
         viewMode.setOpaque(false);
 
-        // Avatar circle
         JPanel avatarCircle = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -1005,7 +996,6 @@ public class CustomerPortal extends JFrame {
         viewMode.add(headerDetail);
         viewMode.add(Box.createRigidArea(new Dimension(0, 28)));
 
-        // Section: PERSONAL INFORMATION
         viewMode.add(appleSection("PERSONAL INFORMATION", sectionFont, labelGrey));
 
         JPanel infoCard = appleCard(cardBg, separatorClr);
@@ -1023,7 +1013,6 @@ public class CustomerPortal extends JFrame {
         viewMode.add(infoCard);
         viewMode.add(Box.createRigidArea(new Dimension(0, 28)));
 
-        // Section: ACCOUNT
         viewMode.add(appleSection("ACCOUNT", sectionFont, labelGrey));
 
         JButton btnEdit       = appleLink("Edit",   accentBlue, rowValueF);
@@ -1079,7 +1068,6 @@ public class CustomerPortal extends JFrame {
         editMode.add(editCard);
         editMode.add(Box.createRigidArea(new Dimension(0, 22)));
 
-        // Save button
         JButton btnSave = new JButton("Save Changes") {
             @Override
             protected void paintComponent(Graphics g) {
@@ -1187,11 +1175,26 @@ public class CustomerPortal extends JFrame {
             int result = JOptionPane.showConfirmDialog(this, pp, "Change Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if (result != JOptionPane.OK_OPTION) return;
 
-            String op = new String(pOld.getPassword()).trim(), nw = new String(pNew.getPassword()).trim(), cf = new String(pCon.getPassword()).trim();
-            if (!op.equals(customer.getPassword())) { JOptionPane.showMessageDialog(this, "Current password is incorrect.", "Error", JOptionPane.ERROR_MESSAGE); return; }
-            if (nw.isEmpty() || nw.length() < 6) { JOptionPane.showMessageDialog(this, "New password must be at least 6 characters.", "Error", JOptionPane.WARNING_MESSAGE); return; }
-            if (!nw.equals(cf)) { JOptionPane.showMessageDialog(this, "New password and confirmation do not match.", "Error", JOptionPane.ERROR_MESSAGE); return; }
-            if (nw.contains("|")) { JOptionPane.showMessageDialog(this, "Password cannot contain the '|' character.", "Error", JOptionPane.WARNING_MESSAGE); return; }
+            String op = new String(pOld.getPassword()).trim();
+            String nw = new String(pNew.getPassword()).trim();
+            String cf = new String(pCon.getPassword()).trim();
+
+            if (!op.equals(customer.getPassword())) {
+                JOptionPane.showMessageDialog(this, "Current password is incorrect.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (nw.isEmpty() || nw.length() < 6) {
+                JOptionPane.showMessageDialog(this, "New password must be at least 6 characters.", "Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (!nw.equals(cf)) {
+                JOptionPane.showMessageDialog(this, "New password and confirmation do not match.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (nw.contains("|")) {
+                JOptionPane.showMessageDialog(this, "Password cannot contain the '|' character.", "Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             customer.setPassword(nw);
             if (customerDAO.updateCustomer(customer)) {
@@ -1208,8 +1211,9 @@ public class CustomerPortal extends JFrame {
             if (c1 != JOptionPane.YES_OPTION) return;
 
             if (customerDAO.deleteCustomer(customerID)) {
-                JOptionPane.showMessageDialog(this, "Your account has been deleted. You will now be logged out.", "Account Deleted", JOptionPane.INFORMATION_MESSAGE);
-                dispose();
+                JOptionPane.showMessageDialog(this, "Your account has been deleted. You will now be logged out.",
+                    "Account Deleted", JOptionPane.INFORMATION_MESSAGE);
+                frame.showPage(MainFrame.PAGE_LOGIN);   // ← 删除账号后跳回登录页
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to delete account.", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -1250,7 +1254,8 @@ public class CustomerPortal extends JFrame {
         return card;
     }
 
-    private void appleInfoRow(JPanel card, String label, JLabel value, Color lc, Color vc, Font lf, Font vf) {
+    private void appleInfoRow(JPanel card, String label, JLabel value,
+                               Color lc, Color vc, Font lf, Font vf) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(13, 20, 13, 20));
@@ -1263,7 +1268,8 @@ public class CustomerPortal extends JFrame {
         card.add(row);
     }
 
-    private void appleActionRow(JPanel card, String title, String subtitle, JButton btn, Color tc, Color sc, Font f) {
+    private void appleActionRow(JPanel card, String title, String subtitle,
+                                 JButton btn, Color tc, Color sc, Font f) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(14, 20, 14, 20));
@@ -1284,14 +1290,16 @@ public class CustomerPortal extends JFrame {
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        JLabel lbl = new JLabel(label); lbl.setFont(lf); lbl.setForeground(lc); lbl.setPreferredSize(new Dimension(120, 20));
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(lf); lbl.setForeground(lc); lbl.setPreferredSize(new Dimension(120, 20));
         row.add(lbl, BorderLayout.WEST);
         row.add(field, BorderLayout.CENTER);
         card.add(row);
     }
 
     private void appleDivider(JPanel card, Color c) {
-        JPanel line = new JPanel(); line.setBackground(c);
+        JPanel line = new JPanel();
+        line.setBackground(c);
         line.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         line.setPreferredSize(new Dimension(0, 1));
         JPanel wrapper = new JPanel(new BorderLayout());
@@ -1310,7 +1318,7 @@ public class CustomerPortal extends JFrame {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseEntered(java.awt.event.MouseEvent e) { btn.setText("<html><u>" + text + "</u></html>"); }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) { btn.setText(text); }
+            @Override public void mouseExited(java.awt.event.MouseEvent e)  { btn.setText(text); }
         });
         return btn;
     }
@@ -1403,9 +1411,11 @@ public class CustomerPortal extends JFrame {
         sidebar.add(sectionLabel);
 
         String[][] navItems = {
-            {"Home", "home"}, {"Our Service", "ourService"},
-            {"Appointment & History", "history"}, {"Make Appointment", "makeAppointment"},
-            {"Profile", "profile"},
+            {"Home",                  "home"},
+            {"Our Service",           "ourService"},
+            {"Appointment & History", "history"},
+            {"Make Appointment",      "makeAppointment"},
+            {"Profile",               "profile"},
         };
 
         for (String[] item : navItems) {
@@ -1452,8 +1462,12 @@ public class CustomerPortal extends JFrame {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setBorder(BorderFactory.createEmptyBorder(0, 18, 0, 0));
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseEntered(java.awt.event.MouseEvent e) { if (btn != activeButton) btn.setBackground(new Color(245, 245, 250)); }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) { if (btn != activeButton) btn.setBackground(Color.WHITE); }
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (btn != activeButton) btn.setBackground(new Color(245, 245, 250));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                if (btn != activeButton) btn.setBackground(Color.WHITE);
+            }
         });
         return btn;
     }
@@ -1474,10 +1488,15 @@ public class CustomerPortal extends JFrame {
         activeButton = selected;
     }
 
+    // ─── LOGOUT ──────────────────────────────────────────────────────────────
+
     private void handleLogout() {
-        int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to logout?",
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to logout?",
             "Logout", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (choice == JOptionPane.YES_OPTION) dispose();
+        if (choice == JOptionPane.YES_OPTION) {
+            frame.showPage(MainFrame.PAGE_LOGIN);   // ← 跳回登录页
+        }
     }
 
     // ─── STATUS BAR ──────────────────────────────────────────────────────────
@@ -1487,23 +1506,27 @@ public class CustomerPortal extends JFrame {
         bar.setBackground(new Color(248, 248, 250));
         bar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
         bar.setPreferredSize(new Dimension(0, 30));
+
         String name = (customer != null) ? customer.getName() : "Unknown";
         String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy"));
+
         JLabel userLabel = new JLabel("User: " + name);
         userLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         userLabel.setForeground(new Color(100, 100, 110));
+
         JLabel sep = new JLabel("   |   ");
         sep.setForeground(new Color(200, 200, 200));
         sep.setFont(new Font("Arial", Font.PLAIN, 11));
+
         JLabel dateLabel = new JLabel(todayDate);
         dateLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         dateLabel.setForeground(new Color(100, 100, 110));
-        bar.add(Box.createHorizontalStrut(16));
-        bar.add(userLabel); bar.add(sep); bar.add(dateLabel);
-        return bar;
-    }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new CustomerPortal());
+        bar.add(Box.createHorizontalStrut(16));
+        bar.add(userLabel);
+        bar.add(sep);
+        bar.add(dateLabel);
+
+        return bar;
     }
 }

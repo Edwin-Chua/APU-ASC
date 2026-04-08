@@ -1,4 +1,4 @@
-package customer_function;
+package models.customer_function;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public class AppointmentDAO {
 
-    private static final String FILE_PATH = "/Users/jellyfish/Desktop/AI Y2S1/OOP/JAVA ASSIGNMENT/Java-Car-Service-System/JAVA ASSIGNMENT/src/customer_data/appointments.txt";
+    private static final String FILE_PATH = "src/txtFiles/appointments.txt";
 
     public List<Appointment> getAllAppointments() {
         List<Appointment> appointments = new ArrayList<>();

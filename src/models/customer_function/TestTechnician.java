@@ -1,4 +1,4 @@
-package customer_function;
+package models.customer_function;
 
 public class TestTechnician {
     public static void main(String[] args) {

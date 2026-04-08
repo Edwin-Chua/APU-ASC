@@ -1,22 +1,20 @@
 package views;
 
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.*;
 import models.dao.UserDAO;
 import models.entities.User;
 import views.shared.AppTheme;
 import views.shared.UIComponent;
-
-import javax.swing.*;
-import javax.swing.border.LineBorder;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class LoginPage extends JPanel {
 
     private final MainFrame frame;
     private final UserDAO userDAO = new UserDAO();
 
-    private JTextField txtUsername;
+    private JTextField txtEmail;        // ← 改成 email
     private JPasswordField txtPassword;
 
     private JToggleButton tglManager;
@@ -31,11 +29,9 @@ public class LoginPage extends JPanel {
         add(buildBackground(), BorderLayout.CENTER);
     }
 
-    // ─── Background with decorative blobs (Apple-style) ──────────────────────
-
     private JPanel buildBackground() {
         Image bgImage = loadImage("/images/signin_bg.jpg");
-    
+
         JPanel bg = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -43,7 +39,6 @@ public class LoginPage extends JPanel {
                 if (bgImage != null) {
                     g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
                 }
-                // Dark overlay so the white card pops against the photo
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setColor(new Color(0, 0, 0, 90));
                 g2.fillRect(0, 0, getWidth(), getHeight());
@@ -56,19 +51,15 @@ public class LoginPage extends JPanel {
         return bg;
     }
 
-    // ─── Card ─────────────────────────────────────────────────────────────────
-
     private JPanel buildCard() {
         JPanel card = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Drop shadow
                 g2.setColor(AppTheme.SHADOW);
                 g2.fillRoundRect(4, 6, getWidth() - 4, getHeight() - 4,
                         AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
-                // Card body
                 g2.setColor(AppTheme.BG_CARD);
                 g2.fillRoundRect(0, 0, getWidth() - 4, getHeight() - 4,
                         AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
@@ -83,7 +74,7 @@ public class LoginPage extends JPanel {
         card.setPreferredSize(new Dimension(520, 560));
         card.setBorder(BorderFactory.createEmptyBorder(36, 40, 32, 40));
 
-        // ── Logo image ───────────────────────────────────────────────────────
+        // ── Logo ──────────────────────────────────────────────────────────────
         Image logoRaw = loadImage("/images/oodj_logo.png");
         JLabel logoLabel;
         if (logoRaw != null) {
@@ -98,7 +89,6 @@ public class LoginPage extends JPanel {
         card.add(logoLabel);
 
         card.add(UIComponent.verticalGap(10));
-        
 
         // ── Title ─────────────────────────────────────────────────────────────
         JLabel title = new JLabel("APU Automotive Service Centre", SwingConstants.CENTER);
@@ -115,22 +105,22 @@ public class LoginPage extends JPanel {
 
         card.add(UIComponent.verticalGap(24));
 
-        // ── Username ──────────────────────────────────────────────────────────
-        JLabel lblUser = new JLabel("Username");
-        lblUser.setFont(AppTheme.FONT_SMALL_BOLD);
-        lblUser.setForeground(AppTheme.TEXT_PRIMARY);
-        lblUser.setHorizontalAlignment(SwingConstants.LEFT);   // text sits left inside the label
-        lblUser.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20)); // stretches to full card width
-        lblUser.setAlignmentX(Component.CENTER_ALIGNMENT);     // matches fields so BoxLayout is happy
-        card.add(lblUser);
+        // ── Email ─────────────────────────────────────────────────────────────
+        JLabel lblEmail = new JLabel("Email");
+        lblEmail.setFont(AppTheme.FONT_SMALL_BOLD);
+        lblEmail.setForeground(AppTheme.TEXT_PRIMARY);
+        lblEmail.setHorizontalAlignment(SwingConstants.LEFT);
+        lblEmail.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        lblEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(lblEmail);
 
         card.add(UIComponent.verticalGap(6));
 
-        txtUsername = UIComponent.createTextField("Enter username");
-        txtUsername.setPreferredSize(new Dimension(Integer.MAX_VALUE, 44));
-        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        txtUsername.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.add(txtUsername);
+        txtEmail = UIComponent.createTextField("Enter email address");
+        txtEmail.setPreferredSize(new Dimension(Integer.MAX_VALUE, 44));
+        txtEmail.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        txtEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(txtEmail);
 
         card.add(UIComponent.verticalGap(16));
 
@@ -138,9 +128,9 @@ public class LoginPage extends JPanel {
         JLabel lblPass = new JLabel("Password");
         lblPass.setFont(AppTheme.FONT_SMALL_BOLD);
         lblPass.setForeground(AppTheme.TEXT_PRIMARY);
-        lblPass.setHorizontalAlignment(SwingConstants.LEFT);   // text sits left inside the label
+        lblPass.setHorizontalAlignment(SwingConstants.LEFT);
         lblPass.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
-        lblPass.setAlignmentX(Component.CENTER_ALIGNMENT);     // matches fields so BoxLayout is happy
+        lblPass.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.add(lblPass);
 
         card.add(UIComponent.verticalGap(5));
@@ -179,8 +169,6 @@ public class LoginPage extends JPanel {
         return card;
     }
 
-    // ─── Role divider: ── Select Role ── ─────────────────────────────────────
-
     private JPanel buildRoleDivider() {
         JPanel divider = new JPanel();
         divider.setLayout(new GridBagLayout());
@@ -212,8 +200,6 @@ public class LoginPage extends JPanel {
         return divider;
     }
 
-    // ─── Role toggle buttons ──────────────────────────────────────────────────
-
     private JPanel buildRoleRow() {
         tglManager    = makeRoleToggle("Manager");
         tglStaff      = makeRoleToggle("Staff");
@@ -226,7 +212,6 @@ public class LoginPage extends JPanel {
         group.add(tglTechnician);
         group.add(tglCustomer);
 
-        // Default selection
         tglManager.setSelected(true);
         applyAllRoleStyles();
 
@@ -289,8 +274,6 @@ public class LoginPage extends JPanel {
         btn.repaint();
     }
 
-    // ─── Sign In button ───────────────────────────────────────────────────────
-
     private JButton buildSignInButton() {
         JButton btn = new JButton("Sign In") {
             @Override
@@ -322,8 +305,6 @@ public class LoginPage extends JPanel {
         return btn;
     }
 
-    // ─── Image loader ─────────────────────────────────────────────────────────
-
     private Image loadImage(String resourcePath) {
         java.net.URL url = getClass().getResource(resourcePath);
         if (url == null) {
@@ -336,13 +317,14 @@ public class LoginPage extends JPanel {
     // ─── Logic ────────────────────────────────────────────────────────────────
 
     private void handleSignIn() {
-        String username = txtUsername.getText().trim();
+        String email    = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
         String role     = getSelectedRole();
 
-        if (username.isEmpty() || password.isEmpty()) {
+        // ── Validation ────────────────────────────────────────────────────────
+        if (email.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(frame,
-                "Please enter both username and password.",
+                "Please enter both email and password.",
                 "Missing Fields", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -353,36 +335,65 @@ public class LoginPage extends JPanel {
             return;
         }
 
-        User user = userDAO.authenticate(username, password, role);
+        // ── Customer: authenticate via email in customer.txt ──────────────────
+        if (role.equals("Customer")) {
+            models.customer_function.CustomerDAO customerDAO =
+                new models.customer_function.CustomerDAO();
 
-        if (user == null) {
-            JOptionPane.showMessageDialog(frame,
-                "Incorrect username, password, or role.",
-                "Login Failed", JOptionPane.ERROR_MESSAGE);
-            return;
+            models.customer_function.Customer customer =
+                customerDAO.getCustomerByLogin(email, password);
+
+            if (customer == null) {
+                JOptionPane.showMessageDialog(frame,
+                    "Incorrect email or password.",
+                    "Login Failed", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Store a lightweight User object for consistency
+            User user = new User(
+                customer.getCustomerID(),
+                customer.getName(),
+                customer.getPassword(),
+                customer.getPhoneNumber(),
+                customer.getEmail(),
+                "Customer",
+                "Approved",
+                customer.getRegisteredDate().toString()
+            );
+            frame.setLoggedInUser(user);
+            frame.showCustomerPage(customer.getCustomerID());
+
+        // ── Staff roles: authenticate via email in role-specific txt ──────────
+        } else {
+            User user = userDAO.authenticateByEmail(email, password, role);
+
+            if (user == null) {
+                JOptionPane.showMessageDialog(frame,
+                    "Incorrect email or password.",
+                    "Login Failed", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            frame.setLoggedInUser(user);
+
+            switch (user.getRole()) {
+                case "Manager":
+                    frame.showPage(MainFrame.PAGE_MANAGER);
+                    break;
+                case "CounterStaff":
+                    frame.showPage(MainFrame.PAGE_COUNTERSTAFF);
+                    break;
+                case "Technician":
+                    frame.showPage(MainFrame.PAGE_TECHNICIAN);
+                    break;
+                default:
+                    JOptionPane.showMessageDialog(frame, "Unknown role: " + user.getRole());
+            }
         }
 
-        frame.setLoggedInUser(user);
-
-        switch (user.getRole()) {
-            case "Manager":
-                frame.showPage(MainFrame.PAGE_MANAGER);
-                break;
-            case "CounterStaff":
-                frame.showPage(MainFrame.PAGE_COUNTERSTAFF);
-                break;
-            case "Technician":
-                frame.showPage(MainFrame.PAGE_TECHNICIAN);
-                break;
-            case "Customer":
-                frame.showPage(MainFrame.PAGE_CUSTOMER);
-                break;
-            default:
-                JOptionPane.showMessageDialog(frame, "Unknown role: " + user.getRole());
-        }
-
-        // Clear fields after navigation
-        txtUsername.setText("");
+        // ── Clear fields ──────────────────────────────────────────────────────
+        txtEmail.setText("");
         txtPassword.setText("");
     }
 

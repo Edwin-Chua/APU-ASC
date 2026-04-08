@@ -1,4 +1,4 @@
-package customer_function;
+package models.customer_function;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FeedbackDAO {
-    private static final String FILE_PATH = "/Users/jellyfish/Desktop/AI Y2S1/OOP/JAVA ASSIGNMENT/Java-Car-Service-System/JAVA ASSIGNMENT/src/customer_data/feedback.txt";
+    private static final String FILE_PATH = "src/txtFiles/feedback.txt";
 
     public Feedback getFeedbackByAppointmentID(String appointmentID) {
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
