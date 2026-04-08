@@ -26,9 +26,9 @@ public final class AppTheme {
 
     // ─── Sidebar colors ──────────────────────────────────────────────────────
     public static final Color SIDEBAR_BG       = new Color(242, 242, 247); // light Apple sidebar
-    public static final Color SIDEBAR_ACTIVE_BG = new Color(0, 122, 255, 18);
+    public static final Color SIDEBAR_ACTIVE_BG  = new Color(232, 240, 255);  // opaque light blue
     public static final Color SIDEBAR_ACTIVE_INDICATOR = PRIMARY;
-    public static final Color SIDEBAR_HOVER_BG = new Color(0, 0, 0, 8);
+    public static final Color SIDEBAR_HOVER_BG   = new Color(235, 235, 240);  // opaque light grey
     public static final Color SIDEBAR_DIVIDER  = new Color(220, 220, 225);
 
     // ─── Text colors ─────────────────────────────────────────────────────────
