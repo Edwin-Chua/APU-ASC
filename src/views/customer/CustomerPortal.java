@@ -1211,7 +1211,6 @@ public class CustomerPortal extends JFrame {
         logout.addActionListener(e -> {
             if (JOptionPane.showConfirmDialog(this, "Are you sure you want to logout?",
                     "Logout", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-                // ── 重新打开登录页面，然后关闭 CustomerPortal ─────────────────
                 SwingUtilities.invokeLater(() -> new views.MainFrame());
                 dispose();
             }
