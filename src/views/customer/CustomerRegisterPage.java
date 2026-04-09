@@ -5,7 +5,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.*;
 import models.customer_function.CustomerDAO;
-import models.entities.CustomerRegister;
 import views.MainFrame;
 import views.shared.AppTheme;
 import views.shared.UIComponent;
@@ -18,6 +17,7 @@ public class CustomerRegisterPage extends JPanel {
     private JTextField txtName;
     private JTextField txtContact;
     private JTextField txtEmail;
+    private JTextArea txtAddress;
     private JPasswordField txtPassword;
     private JPasswordField txtConfirmPassword;
 
@@ -25,18 +25,16 @@ public class CustomerRegisterPage extends JPanel {
         this.frame = frame;
         setLayout(new BorderLayout());
         setBackground(AppTheme.BG_PAGE);
-        add(buildTopBar(),   BorderLayout.NORTH);
-        add(buildContent(),  BorderLayout.CENTER);
+        add(buildTopBar(), BorderLayout.NORTH);
+        add(buildContent(), BorderLayout.CENTER);
     }
-
-    // ─── Top bar with Back button ─────────────────────────────────────────────
 
     private JPanel buildTopBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 12));
         bar.setBackground(AppTheme.BG_PAGE);
         bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER_HEADER));
 
-        JButton backBtn = new JButton("← Back") {
+        JButton backBtn = new JButton("< Back") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -67,13 +65,10 @@ public class CustomerRegisterPage extends JPanel {
         return bar;
     }
 
-    // ─── Main content: image left + form right ────────────────────────────────
-
     private JPanel buildContent() {
         JPanel content = new JPanel(new GridBagLayout());
         content.setBackground(AppTheme.BG_PAGE);
 
-        // Outer card
         JPanel card = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -93,7 +88,7 @@ public class CustomerRegisterPage extends JPanel {
         };
         card.setLayout(new GridLayout(1, 2, 0, 0));
         card.setOpaque(false);
-        card.setPreferredSize(new Dimension(860, 560));
+        card.setPreferredSize(new Dimension(920, 620));
 
         card.add(buildImagePanel());
         card.add(buildFormPanel());
@@ -102,15 +97,12 @@ public class CustomerRegisterPage extends JPanel {
         return content;
     }
 
-    // ─── Left: illustration ───────────────────────────────────────────────────
-
     private JPanel buildImagePanel() {
         JPanel panel = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Rounded only on the left two corners
                 g2.setColor(AppTheme.PRIMARY_LIGHT);
                 g2.fillRoundRect(0, 0, getWidth() + AppTheme.RADIUS_CARD,
                         getHeight(), AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
@@ -135,78 +127,87 @@ public class CustomerRegisterPage extends JPanel {
         return panel;
     }
 
-    // ─── Right: form ──────────────────────────────────────────────────────────
-
     private JPanel buildFormPanel() {
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setOpaque(false);
-        form.setBorder(BorderFactory.createEmptyBorder(40, 36, 40, 40));
+        form.setBorder(BorderFactory.createEmptyBorder(30, 36, 30, 40));
 
-        // Title
         JLabel title = new JLabel("Register An Account");
         title.setFont(AppTheme.FONT_HEADING_2);
         title.setForeground(AppTheme.TEXT_PRIMARY);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         form.add(title);
 
-        JLabel subtitle = new JLabel("Fill in your details to create a customer account.");
+        JLabel subtitle = new JLabel("Fill in all required details to create your customer account.");
         subtitle.setFont(AppTheme.FONT_CAPTION);
         subtitle.setForeground(AppTheme.TEXT_MUTED);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         form.add(subtitle);
 
-        form.add(UIComponent.verticalGap(24));
+        form.add(UIComponent.verticalGap(18));
 
-        // Name
         form.add(fieldLabel("Name"));
         form.add(UIComponent.verticalGap(5));
         txtName = stretchedField("Enter your full name");
         form.add(txtName);
 
-        form.add(UIComponent.verticalGap(14));
+        form.add(UIComponent.verticalGap(12));
 
-        // Contact
         form.add(fieldLabel("Contact Number"));
         form.add(UIComponent.verticalGap(5));
         txtContact = stretchedField("e.g. 0123456789");
         form.add(txtContact);
 
-        form.add(UIComponent.verticalGap(14));
+        form.add(UIComponent.verticalGap(12));
 
-        // Email
         form.add(fieldLabel("Email Address"));
         form.add(UIComponent.verticalGap(5));
         txtEmail = stretchedField("e.g. you@email.com");
         form.add(txtEmail);
 
-        form.add(UIComponent.verticalGap(14));
+        form.add(UIComponent.verticalGap(12));
 
-        // Password
+        form.add(fieldLabel("Address"));
+        form.add(UIComponent.verticalGap(5));
+        txtAddress = new JTextArea();
+        txtAddress.setLineWrap(true);
+        txtAddress.setWrapStyleWord(true);
+        txtAddress.setFont(AppTheme.FONT_BODY);
+        txtAddress.setForeground(AppTheme.TEXT_PRIMARY);
+        txtAddress.setBackground(Color.WHITE);
+        txtAddress.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER_CARD),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        JScrollPane addressScroll = new JScrollPane(txtAddress);
+        addressScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addressScroll.setPreferredSize(new Dimension(Integer.MAX_VALUE, 90));
+        addressScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        form.add(addressScroll);
+
+        form.add(UIComponent.verticalGap(12));
+
         form.add(fieldLabel("Password"));
         form.add(UIComponent.verticalGap(5));
         txtPassword = stretchedPasswordField();
         form.add(txtPassword);
 
-        form.add(UIComponent.verticalGap(14));
+        form.add(UIComponent.verticalGap(12));
 
-        // Confirm Password
         form.add(fieldLabel("Confirm Password"));
         form.add(UIComponent.verticalGap(5));
         txtConfirmPassword = stretchedPasswordField();
         form.add(txtConfirmPassword);
 
-        form.add(UIComponent.verticalGap(28));
+        form.add(UIComponent.verticalGap(20));
 
-        // Submit button
         JButton submitBtn = buildSubmitButton();
         submitBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         form.add(submitBtn);
 
         return form;
     }
-
-    // ─── Field helpers ────────────────────────────────────────────────────────
 
     private JLabel fieldLabel(String text) {
         JLabel lbl = new JLabel(text);
@@ -220,21 +221,19 @@ public class CustomerRegisterPage extends JPanel {
 
     private JTextField stretchedField(String placeholder) {
         JTextField field = UIComponent.createTextField(placeholder);
-        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 44));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 42));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
         return field;
     }
 
     private JPasswordField stretchedPasswordField() {
         JPasswordField field = UIComponent.createPasswordField();
-        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 44));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 42));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
         return field;
     }
-
-    // ─── Submit button ────────────────────────────────────────────────────────
 
     private JButton buildSubmitButton() {
         JButton btn = new JButton("Submit") {
@@ -267,27 +266,55 @@ public class CustomerRegisterPage extends JPanel {
         return btn;
     }
 
-    // ─── Logic ────────────────────────────────────────────────────────────────
-
     private void handleSubmit() {
-        String name     = txtName.getText().trim();
-        String contact  = txtContact.getText().trim();
-        String email    = txtEmail.getText().trim();
+        String name = txtName.getText().trim();
+        String contact = txtContact.getText().trim();
+        String email = txtEmail.getText().trim();
+        String address = txtAddress.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
-        String confirm  = new String(txtConfirmPassword.getPassword()).trim();
+        String confirm = new String(txtConfirmPassword.getPassword()).trim();
 
-        CustomerRegister registration = new CustomerRegister(name, contact, email, password, confirm);
-        String error = registration.register(customerDAO);
+        if (name.isEmpty() || contact.isEmpty() || email.isEmpty() || address.isEmpty()
+                || password.isEmpty() || confirm.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Please fill in all fields.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            JOptionPane.showMessageDialog(frame, "Invalid email format.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (!contact.matches("\\d{9,12}")) {
+            JOptionPane.showMessageDialog(frame, "Contact number must be 9-12 digits.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (password.length() < 6) {
+            JOptionPane.showMessageDialog(frame, "Password must be at least 6 characters.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (!password.equals(confirm)) {
+            JOptionPane.showMessageDialog(frame, "Password and Confirm Password do not match.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String error = customerDAO.registerCustomer(name, password, contact, email, address);
         if (error != null) {
             JOptionPane.showMessageDialog(frame, error,
-                "Registration Failed", JOptionPane.WARNING_MESSAGE);
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         JOptionPane.showMessageDialog(frame,
-            "Account created successfully!\n" +
-            "Status: Pending — a manager must approve your account before you can sign in.",
-            "Registration Successful", JOptionPane.INFORMATION_MESSAGE);
+                "Account created successfully.\nStatus: Pending - manager approval required before login.",
+                "Registration Successful", JOptionPane.INFORMATION_MESSAGE);
 
         clearFields();
         frame.showPage(MainFrame.PAGE_LOGIN);
@@ -297,6 +324,7 @@ public class CustomerRegisterPage extends JPanel {
         txtName.setText("");
         txtContact.setText("");
         txtEmail.setText("");
+        txtAddress.setText("");
         txtPassword.setText("");
         txtConfirmPassword.setText("");
     }

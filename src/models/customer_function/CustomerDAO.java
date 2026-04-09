@@ -1,6 +1,7 @@
 package models.customer_function;
 
 import java.io.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,17 +16,24 @@ public class CustomerDAO {
             String line;
 
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
 
-                if (parts.length == 7) {
+                String[] parts = line.split("\\|", -1);
+
+                // Expected order:
+                // id|password|name|email|phone|address|status|registeredDate
+                if (parts.length == 8) {
                     Customer c = new Customer(
-                            parts[0],
-                            parts[1],
-                            parts[2],
-                            parts[3],
-                            parts[4],
-                            parts[5],
-                            parts[6]
+                            parts[0].trim(),
+                            parts[1].trim(),
+                            parts[2].trim(),
+                            parts[3].trim(),
+                            parts[4].trim(),
+                            parts[5].trim(),
+                            parts[6].trim(),
+                            parts[7].trim()
                     );
                     list.add(c);
                 }
@@ -49,7 +57,7 @@ public class CustomerDAO {
 
     public Customer getCustomerByLogin(String email, String password) {
         for (Customer c : getAllCustomers()) {
-            if (c.getEmail().equals(email) && c.getPassword().equals(password)) {
+            if (c.getEmail().equalsIgnoreCase(email) && c.getPassword().equals(password)) {
                 return c;
             }
         }
@@ -81,7 +89,7 @@ public class CustomerDAO {
                 if (num > max) {
                     max = num;
                 }
-            } catch (Exception e) {
+            } catch (Exception ignored) {
             }
         }
 
@@ -102,7 +110,6 @@ public class CustomerDAO {
 
     private boolean saveCustomers(List<Customer> customers) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
-
             for (Customer c : customers) {
                 String line = c.getCustomerID() + "|"
                         + c.getPassword() + "|"
@@ -110,6 +117,7 @@ public class CustomerDAO {
                         + c.getEmail() + "|"
                         + c.getPhoneNumber() + "|"
                         + c.getAddress() + "|"
+                        + c.getStatus() + "|"
                         + c.getRegisteredDate();
 
                 bw.write(line);
@@ -164,45 +172,36 @@ public class CustomerDAO {
         }
     }
 
-    public String registerCustomer(String username, String password, String contactNum, String email) {
+    // New full registration method (includes address)
+    public String registerCustomer(String name, String password, String contactNum, String email, String address) {
         if (isEmailExists(email)) {
             return "This email is already registered. Please use a different email.";
         }
 
         String newID = generateCustomerID();
-        String registeredDate = java.time.LocalDate.now().toString();
+        String registeredDate = LocalDate.now().toString();
 
-        List<String> rawLines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                rawLines.add(line);
-            }
-        } catch (IOException e) {
-            System.err.println("Error reading file: " + e.getMessage());
-            return "Registration failed due to a system error. Please try again.";
-        }
-
-        String newLine = newID        + "|"
-                + username            + "|"
-                + password            + "|"
-                + contactNum          + "|"
-                + email               + "|"
-                + "Customer"          + "|"
-                + "Pending"           + "|"
+        // id|password|name|email|phone|address|status|registeredDate
+        String newLine = newID + "|"
+                + password + "|"
+                + name + "|"
+                + email + "|"
+                + contactNum + "|"
+                + address + "|"
+                + "Pending" + "|"
                 + registeredDate;
 
-        rawLines.add(newLine);
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            for (String l : rawLines) {
-                bw.write(l);
-                bw.newLine();
-            }
-            return null; // null = 成功
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
+            bw.write(newLine);
+            bw.newLine();
+            return null;
         } catch (IOException e) {
             System.err.println("Cannot write to customer.txt: " + e.getMessage());
             return "Registration failed due to a system error. Please try again.";
         }
+    }
+
+    public String registerCustomer(String username, String password, String contactNum, String email) {
+        return registerCustomer(username, password, contactNum, email, "");
     }
 }

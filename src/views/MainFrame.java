@@ -1,16 +1,15 @@
 package views;
 
-import models.entities.User;
-import views.shared.AppTheme;
-import views.shared.BaseDashboard;
-import views.customer.CustomerRegisterPage;
-import views.customer.CustomerPortal;
-import views.manager.ManagerDashboard;
-
-import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
+import models.entities.User;
+import views.customer.CustomerPortal;
+import views.customer.CustomerRegisterPage;
+import views.manager.ManagerDashboard;
+import views.shared.AppTheme;
+import views.shared.BaseDashboard;
 
 public class MainFrame extends JFrame {
 
@@ -18,7 +17,6 @@ public class MainFrame extends JFrame {
     public static final String PAGE_MANAGER      = "manager";
     public static final String PAGE_COUNTERSTAFF = "counterstaff";
     public static final String PAGE_TECHNICIAN   = "technician";
-    public static final String PAGE_CUSTOMER     = "customer";
     public static final String PAGE_REGISTER     = "register";
 
     private final CardLayout cardLayout = new CardLayout();
@@ -45,19 +43,8 @@ public class MainFrame extends JFrame {
         showPage(PAGE_LOGIN);
     }
 
-    /** Dynamically creates and shows a CustomerPortal for the given customerID. */
     public void showCustomerPage(String customerID) {
-        // Remove old customer panel if it exists
-        JPanel old = pages.get(PAGE_CUSTOMER);
-        if (old != null) {
-            mainPanel.remove(old);
-            pages.remove(PAGE_CUSTOMER);
-        }
-
-        // Create fresh portal with the real customerID
-        CustomerPortal portal = new CustomerPortal(this, customerID);
-        addPage(PAGE_CUSTOMER, portal);
-        cardLayout.show(mainPanel, PAGE_CUSTOMER);
+        new CustomerPortal(customerID);
     }
 
     private JPanel placeholder(String title) {

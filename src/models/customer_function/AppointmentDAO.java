@@ -51,13 +51,15 @@ public class AppointmentDAO {
         return appointments;
     }
 
-    // 修复：找最近的upcoming appointment（日期最小但不早于今天）
+    // 修复：找最近的upcoming appointment（日期最小但不早于今天，且状态为 "Confirmed"）
     public Appointment getUpcomingAppointmentByCustomerID(String customerID) {
         LocalDate today = LocalDate.now();
         Appointment upcoming = null;
 
         for (Appointment a : getAllAppointments()) {
-            if (a.getCustomerID().equals(customerID) && !a.getAppointmentDate().isBefore(today)) {
+            if (a.getCustomerID().equals(customerID) 
+                    && !a.getAppointmentDate().isBefore(today)
+                    && "Confirmed".equals(a.getStatus())) {
                 if (upcoming == null || a.getAppointmentDate().isBefore(upcoming.getAppointmentDate())) {
                     upcoming = a;
                 }
@@ -71,7 +73,9 @@ public class AppointmentDAO {
         List<Appointment> list = new ArrayList<>();
 
         for (Appointment a : getAllAppointments()) {
-            if (a.getCustomerID().equals(customerID) && a.getAppointmentDate().isBefore(today)) {
+            if (a.getCustomerID().equals(customerID) 
+                    && a.getAppointmentDate().isBefore(today)
+                    && "Completed".equals(a.getStatus())) {
                 list.add(a);
             }
         }

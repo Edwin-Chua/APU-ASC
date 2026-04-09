@@ -366,7 +366,7 @@ public class LoginPage extends JPanel {
 
         // ── Staff roles: authenticate via email in role-specific txt ──────────
         } else {
-            User user = userDAO.authenticateByEmail(email, password, role);
+            User user = userDAO.authenticateStaff(email, password, role);
 
             if (user == null) {
                 JOptionPane.showMessageDialog(frame,
