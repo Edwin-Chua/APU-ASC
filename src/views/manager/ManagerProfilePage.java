@@ -28,6 +28,7 @@ public class ManagerProfilePage extends JPanel {
 
     // View mode labels
     private JLabel lblUserId;
+    private JLabel lblEmail;
     private JLabel lblUsername;
     private JLabel lblRole;
     private JLabel lblCreatedDate;
@@ -117,6 +118,10 @@ public class ManagerProfilePage extends JPanel {
 
         lblUserId = new JLabel("-");
         infoCard.add(UIComponent.createInfoRow("User ID", lblUserId));
+        infoCard.add(UIComponent.createRowDivider());
+
+        lblEmail = new JLabel("-");
+        infoCard.add(UIComponent.createInfoRow("Email", lblEmail));
         infoCard.add(UIComponent.createRowDivider());
 
         lblUsername = new JLabel("-");
@@ -233,7 +238,7 @@ public class ManagerProfilePage extends JPanel {
                 return;
             }
 
-            if (userDAO.updateStaffLikeUsername("Manager", currentUser.getUserId(), newUsername)) {
+            if (userDAO.updateManagerUsername(currentUser.getUserId(), newUsername)) {
                 JOptionPane.showMessageDialog(frame, "Profile updated successfully!",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
@@ -347,7 +352,7 @@ public class ManagerProfilePage extends JPanel {
                 return;
             }
 
-            if (userDAO.updateStaffLikePassword("Manager", currentUser.getUserId(), np)) {
+            if (userDAO.updateManagerPassword(currentUser.getUserId(), np)) {
                 JOptionPane.showMessageDialog(frame, "Password changed successfully!",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
@@ -393,6 +398,9 @@ public class ManagerProfilePage extends JPanel {
         if (lblUserId != null) {
             lblUserId.setText(user.getUserId());
         }
+        if (lblEmail != null) {
+            lblEmail.setText(user.getEmail() == null ? "-" : user.getEmail());
+        }
         if (lblUsername != null) {
             lblUsername.setText(user.getUsername());
         }
@@ -407,10 +415,9 @@ public class ManagerProfilePage extends JPanel {
             headerName.setText(user.getUsername());
         }
         if (headerSub != null) {
-            String date = (user.getCreatedDate() == null || user.getCreatedDate().isBlank())
-                ? ""
-                : " \u2022 Member since " + user.getCreatedDate();
-            headerSub.setText(user.getRole() + date);
+            String userId = (user.getUserId() == null || user.getUserId().isBlank()) ? "-" : user.getUserId();
+            String email  = (user.getEmail() == null || user.getEmail().isBlank()) ? "-" : user.getEmail();
+            headerSub.setText(userId + " \u2022 " + email);
         }
     }
 }

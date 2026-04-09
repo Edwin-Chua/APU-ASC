@@ -1,4 +1,5 @@
-T001|Ahmad bin Rodzi|ahmad@autoserve.com|tech123|Active|General Service
-T002|Lim Wei Jian|lim@autoserve.com|tech456|Active|Engine Specialist
-T003|Muthu Krishnan|muthu@autoserve.com|tech789|Active|Electrical System
-T004|Siti Nurhaliza|siti@autoserve.com|tech321|Active|Body & Paint
+TechnicianID|username|email|password|work_status|createdDate
+T001|Ahmad bin Rodzi|ahmad@autoserve.com|tech123|Active|2024-01-01
+T002|Lim Wei Jian|lim@autoserve.com|tech456|Active|2024-01-01
+T003|Muthu Krishnan|muthu@autoserve.com|tech789|Active|2024-01-01
+T004|Siti Nurhaliza|siti@autoserve.com|tech321|Active|2024-01-01
