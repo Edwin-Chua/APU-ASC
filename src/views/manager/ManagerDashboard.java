@@ -90,6 +90,8 @@ public class ManagerDashboard extends BaseDashboard {
             profilePage.loadUser(user);
         }
         navigate(btnEmployees, PAGE_EMPLOYEES);
+
+        employeesPage.loadData();
     }
 
     private void navigate(JButton btn, String page) {
