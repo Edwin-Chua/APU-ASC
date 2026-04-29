@@ -12,7 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
-
+import views.technician.TechnicianDashboard;
 public class MainFrame extends JFrame {
 
     public static final String PAGE_LOGIN        = "login";
@@ -40,7 +40,7 @@ public class MainFrame extends JFrame {
         addPage(PAGE_LOGIN,        new LoginPage(this));
         addPage(PAGE_MANAGER,      new ManagerDashboard(this));
         addPage(PAGE_COUNTERSTAFF, new CounterStaffDashboard(this));
-        addPage(PAGE_TECHNICIAN,   placeholder("Technician Dashboard"));
+        addPage(PAGE_TECHNICIAN,   new TechnicianDashboard(this));
 
         add(mainPanel, BorderLayout.CENTER);
         showPage(PAGE_LOGIN);
