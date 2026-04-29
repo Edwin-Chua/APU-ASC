@@ -1,0 +1,13 @@
+ServiceItemID|itemName|serviceTypeID|description
+SI001|Engine Oil Change|ST001|Drain and replace engine oil with fresh lubricant
+SI002|Oil Filter Replacement|ST001|Replace clogged oil filter to maintain clean oil flow
+SI003|Tyre Pressure Check|ST001|Inspect and adjust all four tyre pressures to spec
+SI004|Battery Voltage Check|ST001|Test battery health and terminal connections
+SI005|Wiper Blade Inspection|ST001|Check and replace worn wiper blades if needed
+SI006|Air Filter Replacement|ST001|Replace dirty cabin and engine air filters
+SI007|Full Engine Inspection|ST002|Thorough check of engine components and performance
+SI008|Brake Pad Replacement|ST002|Remove and replace worn front and rear brake pads
+SI009|Transmission Fluid Change|ST002|Flush and refill transmission fluid to manufacturer spec
+SI010|Coolant System Flush|ST002|Drain, flush, and refill the entire coolant system
+SI011|Spark Plug Replacement|ST002|Replace all spark plugs for optimal ignition performance
+SI012|Wheel Alignment & Balancing|ST002|Align wheels and balance all four tyres

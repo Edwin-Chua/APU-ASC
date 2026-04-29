@@ -95,6 +95,95 @@ public class CustomerDAO {
         }
     }
 
+    // ─── Update customer ──────────────────────────────────────────────────────
+    // Updates username, contactNum, email, status — ID, password, role, date unchanged
+
+    public boolean updateCustomer(String customerId, String username,
+                                  String password, String contactNum,
+                                  String email, String status) {
+        Path path = Paths.get(FILE_PATH);
+        try {
+            List<String> lines = Files.readAllLines(path);
+            List<String> updated = new ArrayList<>();
+            boolean found = false;
+
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.toLowerCase().startsWith("userid")) {
+                    updated.add(line);
+                    continue;
+                }
+                String[] parts = trimmed.split("\\|", -1);
+                if (parts.length >= 8 && parts[0].trim().equals(customerId)) {
+                    // Rebuild: keep ID, role, createdDate — update everything else
+                    String record = String.join("|",
+                        parts[0],       // UserID
+                        username,       // username
+                        password,       // password
+                        contactNum,     // contactNum
+                        email,          // email
+                        parts[5],       // role (unchanged)
+                        status,         // status
+                        parts[7]        // createdDate (unchanged)
+                    );
+                    updated.add(record);
+                    found = true;
+                } else {
+                    updated.add(line);
+                }
+            }
+
+            if (!found) return false;
+            Files.write(path, updated);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public boolean approveCustomer(String customerId) {
+        Path path = Paths.get(FILE_PATH);
+        try {
+            List<String> lines = Files.readAllLines(path);
+            List<String> updated = new ArrayList<>();
+            boolean found = false;
+ 
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.toLowerCase().startsWith("userid")) {
+                    updated.add(line);
+                    continue;
+                }
+                String[] parts = trimmed.split("\\|", -1);
+                if (parts.length >= 8 && parts[0].trim().equals(customerId)) {
+                    // Only update status field (index 6), leave everything else unchanged
+                    parts[6] = "Approved";
+                    updated.add(String.join("|", parts));
+                    found = true;
+                } else {
+                    updated.add(line);
+                }
+            }
+ 
+            if (!found) return false;
+            Files.write(path, updated);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // ─── Get password by ID ───────────────────────────────────────────────────
+
+    public String getPasswordById(String customerId) {
+        for (String[] c : getAllCustomers()) {
+            if (c.length >= 3 && c[0].trim().equals(customerId)) return c[2];
+        }
+        return null;
+    }
+
     // ─── Email existence check ────────────────────────────────────────────────
 
     public boolean emailExists(String email) {

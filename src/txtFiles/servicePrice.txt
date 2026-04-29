@@ -1,0 +1,3 @@
+ServiceTypeID|typeName|price|lastUpdatedBy|lastUpdatedDate
+ST001|Normal Service|80.00|M001|2024-01-10
+ST002|Major Service|220.00|M001|2024-01-10

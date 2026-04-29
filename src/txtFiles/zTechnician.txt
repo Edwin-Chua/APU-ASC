@@ -1,0 +1,5 @@
+TechnicianID|username|email|password|workStatus|createdDate
+T001|techAli|ali@asc.com|tech1234|Available|2024-01-15
+T002|techSara|sara@asc.com|tech5678|Available|2024-02-01
+T003|techRaja|raja@asc.com|tech9012|Busy|2024-02-20
+T004|techMei|mei@asc.com|tech3456|Available|2024-03-05

@@ -1,0 +1,3 @@
+ServiceTypeID|typeName|estimatedHours|description
+ST001|Normal Service|1|Basic routine service completed within 1 hour
+ST002|Major Service|3|Comprehensive full service completed within 3 hours

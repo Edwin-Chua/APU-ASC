@@ -7,8 +7,8 @@ import views.shared.AppTheme;
 import views.shared.UIComponent;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
+import javax.swing.plaf.LayerUI;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
 
     // File 1 columns (original content)
     private static final String[] COLS = {
-        "", "Customer ID", "Username", "Email", "Contact No.", "Status", "Registered Date"
+        "", "Customer ID", "Username", "Email", "Contact No.", "Status", "Registered Date", "Action", ""
     };
 
     public CounterStaffRegisterCustomer(MainFrame frame) {
@@ -66,16 +66,8 @@ public class CounterStaffRegisterCustomer extends JPanel {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
 
-        searchField = new JTextField();
+        searchField = UIComponent.createTextField("Search by name, email or ID…");
         searchField.setPreferredSize(new Dimension(260, 38));
-        searchField.setFont(AppTheme.FONT_SMALL);
-        searchField.setForeground(AppTheme.TEXT_PRIMARY);
-        searchField.setBackground(AppTheme.BG_FIELD);
-        searchField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(AppTheme.BORDER_DEFAULT, 1, true),
-            BorderFactory.createEmptyBorder(6, 12, 6, 12)
-        ));
-        searchField.setToolTipText("Search by name, email or ID…");
         searchField.addActionListener(e -> loadTableData(searchField.getText().trim()));
 
         JButton btnSearch = UIComponent.createSmallButton("Search");
@@ -128,7 +120,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
                 return col == 0 ? Boolean.class : String.class;
             }
             @Override public boolean isCellEditable(int row, int col) {
-                return col == 0;
+                return col == 0; // only checkbox column is editable
             }
         };
 
@@ -139,7 +131,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
         table.setBackground(AppTheme.BG_CARD);
         table.setGridColor(AppTheme.SEPARATOR);
         table.setShowVerticalLines(false);
-        table.setShowHorizontalLines(true);
+        table.setShowHorizontalLines(false);
         table.setSelectionBackground(AppTheme.PRIMARY_LIGHT);
         table.setSelectionForeground(AppTheme.TEXT_PRIMARY);
         table.setFillsViewportHeight(true);
@@ -153,6 +145,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
         header.setForeground(AppTheme.TEXT_SECONDARY);
         header.setPreferredSize(new Dimension(0, 40));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER_DEFAULT));
+        header.setOpaque(true);
         header.setReorderingAllowed(false);
 
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer() {
@@ -178,12 +171,18 @@ public class CounterStaffRegisterCustomer extends JPanel {
         TableColumnModel cm = table.getColumnModel();
         cm.getColumn(0).setMinWidth(38);
         cm.getColumn(0).setMaxWidth(38);
-        cm.getColumn(1).setPreferredWidth(100);
+        cm.getColumn(1).setPreferredWidth(110);
         cm.getColumn(2).setPreferredWidth(140);
-        cm.getColumn(3).setPreferredWidth(200);
-        cm.getColumn(4).setPreferredWidth(120);
-        cm.getColumn(5).setPreferredWidth(90);
+        cm.getColumn(3).setPreferredWidth(180);
+        cm.getColumn(4).setPreferredWidth(130);
+        cm.getColumn(5).setPreferredWidth(100);
         cm.getColumn(6).setPreferredWidth(130);
+        cm.getColumn(7).setPreferredWidth(60);
+        cm.getColumn(7).setMinWidth(60);
+        cm.getColumn(7).setMaxWidth(60);
+        cm.getColumn(8).setPreferredWidth(90);
+        cm.getColumn(8).setMinWidth(90);
+        cm.getColumn(8).setMaxWidth(90);
         
 		// Separator color — visible on both white and grey rows
 		Color ROW_SEPARATOR = new Color(220, 220, 225);
@@ -236,36 +235,193 @@ public class CounterStaffRegisterCustomer extends JPanel {
 		    }
 		};
 		
-		// Apply renderers — col 5 = Status gets badge renderer
+		// Apply renderers — col 5 = Status, col 7 = Action button
 		for (int i = 1; i < COLS.length; i++) {
+		    if (i == 7) continue; // action column uses custom renderer/editor below
 		    table.getColumnModel().getColumn(i).setCellRenderer(
 		        i == 5 ? statusRenderer : rowRenderer
 		    );
 		}
 
-        // ── Rounded card wrapper (File 2 style) ────────────────────────────────
-        JPanel card = new JPanel(new BorderLayout()) {
+		// ── Edit button renderer ──────────────────────────────────────────────
+		// Track hovered cell — only the Action column (col 7) gets the underline
+		int[] hoveredRow = { -1 };
+		int[] hoveredCol = { -1 };
+		table.addMouseMotionListener(new MouseAdapter() {
+		    @Override public void mouseMoved(MouseEvent e) {
+		        int row = table.rowAtPoint(e.getPoint());
+		        int col = table.columnAtPoint(e.getPoint());
+		        if (row != hoveredRow[0] || col != hoveredCol[0]) {
+		            hoveredRow[0] = row;
+		            hoveredCol[0] = col;
+		            // Only repaint action columns to avoid full-table flicker
+		            if (row >= 0) {
+		                table.repaint(table.getCellRect(row, 7, true));
+		                table.repaint(table.getCellRect(row, 8, true));
+		            }
+		        }
+		    }
+		});
+		table.addMouseListener(new MouseAdapter() {
+		    @Override public void mouseExited(MouseEvent e) {
+		        hoveredRow[0] = -1;
+		        hoveredCol[0] = -1;
+		        table.repaint();
+		    }
+		});
+
+		TableCellRenderer editRenderer = new TableCellRenderer() {
+		    @Override
+		    public Component getTableCellRendererComponent(
+		            JTable t, Object val, boolean sel, boolean focus, int row, int col) {
+		        boolean hovered = (row == hoveredRow[0] && hoveredCol[0] == 7);
+		        String labelText = hovered ? "<html><u>Edit</u></html>" : "Edit";
+		        JLabel lbl = new JLabel(labelText, SwingConstants.LEFT);
+		        lbl.setFont(AppTheme.FONT_SMALL);
+		        lbl.setForeground(AppTheme.PRIMARY);
+		        lbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		        lbl.setOpaque(true);
+		        lbl.setBackground(sel ? AppTheme.PRIMARY_LIGHT
+		            : (row % 2 == 0 ? AppTheme.BG_CARD : new Color(248, 248, 250)));
+		        lbl.setBorder(BorderFactory.createCompoundBorder(
+		            BorderFactory.createMatteBorder(0, 0, 1, 0, ROW_SEPARATOR),
+		            BorderFactory.createEmptyBorder(0, 12, 0, 12)
+		        ));
+		        return lbl;
+		    }
+		};
+
+		// ── Approve renderer — only shows for Pending customers ───────────────
+		TableCellRenderer approveRenderer = new TableCellRenderer() {
+		    @Override
+		    public Component getTableCellRendererComponent(
+		            JTable t, Object val, boolean sel, boolean focus, int row, int col) {
+		        Color bg = sel ? AppTheme.PRIMARY_LIGHT
+		            : (row % 2 == 0 ? AppTheme.BG_CARD : new Color(248, 248, 250));
+		        String status = (String) tableModel.getValueAt(row, 5);
+		        boolean isPending = "Pending".equalsIgnoreCase(status);
+		        boolean hovered = (row == hoveredRow[0] && hoveredCol[0] == 8);
+		        JLabel lbl = new JLabel();
+		        if (isPending) {
+			        String labelText = hovered ? "<html><u>Approve</u></html>" : "Approve";
+			        lbl.setText(labelText);
+		            lbl.setForeground(AppTheme.SUCCESS);
+		            lbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		        } else {
+		            lbl.setText("");
+		        }
+		        lbl.setFont(AppTheme.FONT_SMALL);
+		        lbl.setOpaque(true);
+		        lbl.setBackground(bg);
+		        lbl.setBorder(BorderFactory.createCompoundBorder(
+		            BorderFactory.createMatteBorder(0, 0, 1, 0, ROW_SEPARATOR),
+		            BorderFactory.createEmptyBorder(0, 12, 0, 12)
+		        ));
+		        return lbl;
+		    }
+		};
+
+		// ── Single-click on col 7 = Edit, col 8 = Approve ──────────────────
+		table.addMouseListener(new MouseAdapter() {
+		    @Override public void mouseClicked(MouseEvent e) {
+		        int row = table.rowAtPoint(e.getPoint());
+		        int col = table.columnAtPoint(e.getPoint());
+		        if (row < 0) return;
+		        if (col == 7) {
+		            String customerId = (String) tableModel.getValueAt(row, 1);
+		            String username   = (String) tableModel.getValueAt(row, 2);
+		            String email      = (String) tableModel.getValueAt(row, 3);
+		            String contact    = (String) tableModel.getValueAt(row, 4);
+		            String status     = (String) tableModel.getValueAt(row, 5);
+		            showEditCustomerDialog(customerId, username, email, contact, status);
+		        } else if (col == 8) {
+		            String status = (String) tableModel.getValueAt(row, 5);
+		            if (!"Pending".equalsIgnoreCase(status)) return;
+		            String customerId = (String) tableModel.getValueAt(row, 1);
+		            String username   = (String) tableModel.getValueAt(row, 2);
+		            String contact    = (String) tableModel.getValueAt(row, 4);
+		            String email      = (String) tableModel.getValueAt(row, 3);
+		            int confirm = JOptionPane.showConfirmDialog(
+		                CounterStaffRegisterCustomer.this,
+		                "Approve customer " + username + " (" + customerId + ")?",
+		                "Confirm Approve", JOptionPane.YES_NO_OPTION);
+		            if (confirm != JOptionPane.YES_OPTION) return;
+		            boolean success = customerDAO.approveCustomer(customerId);
+		            if (success) {
+		                JOptionPane.showMessageDialog(
+		                    CounterStaffRegisterCustomer.this,
+		                    "Customer" + username + " approved successfully!",
+		                    "Approved", JOptionPane.INFORMATION_MESSAGE);
+		                loadTableData(searchField.getText().trim());
+		            } else {
+		                JOptionPane.showMessageDialog(
+		                    CounterStaffRegisterCustomer.this,
+		                    "Failed to approve customer.", "Error", JOptionPane.ERROR_MESSAGE);
+		            }
+		        }
+		    }
+		});
+
+		table.getColumnModel().getColumn(7).setCellRenderer(editRenderer);
+		table.getColumnModel().getColumn(8).setCellRenderer(approveRenderer);
+
+        final int r = AppTheme.RADIUS_CARD * 2;
+
+        // Remove the UIManager default border that JScrollPane always re-applies
+        javax.swing.UIManager.put("ScrollPane.border", BorderFactory.createEmptyBorder());
+
+        // ── Scroll pane: purely for scrolling, no decoration ──────────────────
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(true);
+        scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setBorder(null);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        // Pull the header out so the card clips both header and body together
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.setOpaque(true);
+        tableHeader.setBackground(AppTheme.BG_CARD);
+        scroll.setColumnHeader(null);
+
+        // ── Inner panel: holds header + scroll body, both white ───────────────
+        JPanel inner = new JPanel(new BorderLayout(0, 0));
+        inner.setOpaque(true);
+        inner.setBackground(AppTheme.BG_CARD);
+        inner.setBorder(BorderFactory.createEmptyBorder());
+        inner.add(tableHeader, BorderLayout.NORTH);
+        inner.add(scroll, BorderLayout.CENTER);
+
+        // ── Card via JLayer: clips inner (header + body) to rounded shape ─────
+        // JLayer is the only approach that reliably clips opaque Swing children
+        // because its LayerUI.paint() wraps the entire component tree.
+        LayerUI<JPanel> cardLayerUI = new LayerUI<JPanel>() {
             @Override
-            protected void paintComponent(Graphics g) {
+            public void paint(Graphics g, JComponent c) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Paint white rounded background first
                 g2.setColor(AppTheme.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
-                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
-                g2.setColor(AppTheme.BORDER_CARD);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
-                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), r, r);
+                // Clip to same rounded shape before painting children
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, c.getWidth(), c.getHeight(), r, r));
+                super.paint(g2, c);
+                // Draw rounded border in separator color on top
+                g2.setClip(null);
+                g2.setColor(AppTheme.SEPARATOR);
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, r, r);
                 g2.dispose();
             }
         };
-        card.setOpaque(false);
-
-        JScrollPane scroll = UIComponent.createAppleScrollPane(table);
-        scroll.getViewport().setBackground(AppTheme.BG_CARD);
-        card.add(scroll, BorderLayout.CENTER);
+        JLayer<JPanel> card = new JLayer<>(inner, cardLayerUI);
 
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
+        wrapper.setBorder(BorderFactory.createEmptyBorder());
         wrapper.add(card, BorderLayout.CENTER);
         return wrapper;
     }
@@ -294,7 +450,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
 
             if (matches) {
                 tableModel.addRow(new Object[]{
-                    Boolean.FALSE, id, username, email, contactNum, status, createdDate
+                    Boolean.FALSE, id, username, email, contactNum, status, createdDate, "", ""
                 });
             }
         }
@@ -383,9 +539,8 @@ public class CounterStaffRegisterCustomer extends JPanel {
 
         // Status dropdown (kept from File 1)
         JLabel lblStatus = UIComponent.createFieldLabel("STATUS");
-        JComboBox<String> cbStatus = new JComboBox<>(new String[]{"Pending", "Approved"});
-        cbStatus.setFont(AppTheme.FONT_BODY);
-        cbStatus.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
+        cbStatus.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         cbStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Error label
@@ -452,5 +607,181 @@ public class CounterStaffRegisterCustomer extends JPanel {
 
         dialog.setContentPane(root);
         dialog.setVisible(true);
+    }
+
+
+    // ─── Edit Customer dialog ─────────────────────────────────────────────────
+
+    private void showEditCustomerDialog(String customerId, String currentUsername,
+            String currentEmail, String currentContact, String currentStatus) {
+        // Fetch current password from file upfront
+        String existingPassword = customerDAO.getPasswordById(customerId);
+        if (existingPassword == null) existingPassword = "";
+        final String[] passwordHolder = { existingPassword }; // mutable ref for lambda
+
+        Window ancestor = SwingUtilities.getWindowAncestor(this);
+        Frame owner = (ancestor instanceof Frame) ? (Frame) ancestor : null;
+        JDialog dialog = new JDialog(owner, "Edit Customer", true);
+        dialog.setSize(480, 660);
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        JPanel root = new JPanel();
+        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
+        root.setBackground(AppTheme.BG_PAGE);
+        root.setBorder(BorderFactory.createEmptyBorder(28, 32, 28, 32));
+
+        // Title + subtitle
+        JLabel dlgTitle = UIComponent.createPageTitle("Edit Customer");
+        dlgTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        root.add(dlgTitle);
+
+        JLabel dlgSubtitle = UIComponent.createCaptionLabel("Customer ID: " + customerId + " (cannot be changed)");
+        dlgSubtitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        root.add(dlgSubtitle);
+
+        // ── Basic fields ──────────────────────────────────────────────────────
+        JLabel lblName    = UIComponent.createFieldLabel("USERNAME");
+        JTextField tfName = UIComponent.createTextField("Full name");
+        tfName.setText(currentUsername);
+
+        JLabel lblEmail    = UIComponent.createFieldLabel("EMAIL");
+        JTextField tfEmail = UIComponent.createTextField("Email address");
+        tfEmail.setText(currentEmail);
+
+        JLabel lblPhone    = UIComponent.createFieldLabel("CONTACT NO.");
+        JTextField tfPhone = UIComponent.createTextField("e.g. 0123456789");
+        tfPhone.setText(currentContact);
+
+        // ── Password row: text field (editable) + show/hide toggle ────────────
+        JLabel lblPass = UIComponent.createFieldLabel("PASSWORD");
+
+        // Use a JTextField so we can show the real value; swap echo char to hide
+        JPasswordField tfPass = UIComponent.createPasswordField();
+        tfPass.setText(existingPassword);  // pre-fill with current (hashed) value
+        tfPass.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        tfPass.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Show/hide toggle button (eye icon via unicode)
+        JButton btnToggle = new JButton("👁") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), AppTheme.RADIUS_BUTTON * 2, AppTheme.RADIUS_BUTTON * 2);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btnToggle.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        btnToggle.setFocusPainted(false);
+        btnToggle.setBorderPainted(false);
+        btnToggle.setContentAreaFilled(false);
+        btnToggle.setOpaque(false);
+        btnToggle.setBackground(AppTheme.BG_FIELD);
+        btnToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnToggle.setPreferredSize(new Dimension(38, 38));
+        btnToggle.setToolTipText("Show / hide password");
+
+        final boolean[] showing = { false };
+        // Start hidden
+        tfPass.setEchoChar('•');
+        btnToggle.addActionListener(e -> {
+            showing[0] = !showing[0];
+            tfPass.setEchoChar(showing[0] ? (char) 0 : '•');
+            btnToggle.setText(showing[0] ? "🙈" : "👁");
+        });
+
+        // Password row panel
+        JPanel passRow = new JPanel(new BorderLayout(6, 0));
+        passRow.setOpaque(false);
+        passRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        passRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        passRow.add(tfPass, BorderLayout.CENTER);
+        passRow.add(btnToggle, BorderLayout.EAST);
+
+        // ── Status dropdown ───────────────────────────────────────────────────
+        JLabel lblStatus = UIComponent.createFieldLabel("STATUS");
+        JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
+        cbStatus.setSelectedItem(currentStatus);
+        cbStatus.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        cbStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Error label
+        JLabel errLabel = new JLabel(" ");
+        errLabel.setFont(AppTheme.FONT_SMALL);
+        errLabel.setForeground(AppTheme.DANGER);
+        errLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Add all fields
+        JLabel[]     labels = { lblName, lblEmail, lblPhone, lblPass,   lblStatus };
+        JComponent[] fields = { tfName,  tfEmail,  tfPhone,  passRow,   cbStatus  };
+        for (int i = 0; i < labels.length; i++) {
+            root.add(labels[i]);
+            root.add(Box.createRigidArea(new Dimension(0, 5)));
+            root.add(fields[i]);
+            root.add(Box.createRigidArea(new Dimension(0, 12)));
+        }
+
+        root.add(errLabel);
+        root.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        // Buttons
+        JButton btnSave   = UIComponent.createPrimaryButton("Save Changes");
+        JButton btnCancel = UIComponent.createOutlineButton("Cancel");
+
+        btnSave.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnSave.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnCancel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnCancel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        btnSave.addActionListener(e -> {
+            String username    = tfName.getText().trim();
+            String email       = tfEmail.getText().trim();
+            String contact     = tfPhone.getText().trim();
+            String password    = new String(tfPass.getPassword()).trim();
+            String status      = (String) cbStatus.getSelectedItem();
+
+            if (username.isEmpty()) { errLabel.setText("Username cannot be empty."); return; }
+            if (email.isEmpty())    { errLabel.setText("Email cannot be empty."); return; }
+            if (contact.isEmpty())  { errLabel.setText("Contact number cannot be empty."); return; }
+            if (password.isEmpty()) { errLabel.setText("Password cannot be empty."); return; }
+
+            boolean success = customerDAO.updateCustomer(customerId, username, password, contact, email, status);
+            if (success) {
+                JOptionPane.showMessageDialog(dialog,
+                    "Customer updated successfully!", "Saved", JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+                loadTableData(searchField.getText().trim());
+            } else {
+                errLabel.setText("Update failed. Please try again.");
+            }
+        });
+
+        root.add(btnSave);
+        root.add(Box.createRigidArea(new Dimension(0, 8)));
+        root.add(btnCancel);
+
+        dialog.setContentPane(root);
+        dialog.setVisible(true);
+    }
+
+    // ─── Card helper ──────────────────────────────────────────────────────────
+    private JPanel createCard() {
+        JPanel card = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.BG_CARD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+        return card;
     }
 }

@@ -1,0 +1,10 @@
+appointment_id|customer_id|staff_id|service_type_id|technician_id|service_item_id|time_slot|end_time|appointment_date|status|customer_comment|vehicle_brand|vehicle_model|vehicle_plate
+AP001|C001|CS001|ST001|T001|SI001|09:00|10:00|2024-03-15|Completed|Good and fast service!|Toyota|Vios|WXY-1234
+AP002|C002|CS001|ST002|T002|SI007|10:00|13:00|2024-03-20|Completed|Very thorough inspection.|Honda|City|BCD-5678
+AP003|C001|CS002|ST001|T003|SI006|11:00|12:00|2024-04-02|Completed|null|Toyota|Vios|WXY-1234
+AP004|C002|CS001|ST002|T001|SI008|14:00|17:00|2024-04-10|Approved|null|Honda|City|BCD-5678
+AP005|C004|CS002|ST001|T002|SI003|09:00|10:00|2026-04-12|Approved|null|Perodua|Myvi|JKL-9012
+AP006|C005|CS001|ST002|T004|SI010|10:00|13:00|2026-04-15|Approved|null|Proton|Saga|MNP-3456
+AP007|C004|null|ST001|null|SI002|11:00|12:00|2026-04-18|Pending|null|Perodua|Myvi|JKL-9012
+AP008|C006|null|ST002|null|SI012|14:00|17:00|2026-04-20|Pending|null|Mazda|3|QRS-7890
+AP009|C002|null|ST001|null|SI004|09:00|10:00|2026-04-22|Pending|null|Honda|City|BCD-5678

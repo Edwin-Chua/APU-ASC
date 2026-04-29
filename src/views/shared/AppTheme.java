@@ -85,9 +85,9 @@ public final class AppTheme {
     public static final int RADIUS_BADGE       = 20;
 
     // ─── Dimensions ──────────────────────────────────────────────────────────
-    public static final Dimension FIELD_SIZE   = new Dimension(380, 44);
-    public static final Dimension BUTTON_SIZE  = new Dimension(380, 46);
-    public static final Dimension BUTTON_SM    = new Dimension(140, 38);
+    public static final Dimension FIELD_SIZE   = new Dimension(380, 38);
+    public static final Dimension BUTTON_SIZE  = new Dimension(380, 40);
+    public static final Dimension BUTTON_SM    = new Dimension(140, 34);
     public static final int SIDEBAR_WIDTH      = 220;
     public static final int HEADER_HEIGHT      = 56;
     public static final int STATUS_BAR_HEIGHT  = 30;
