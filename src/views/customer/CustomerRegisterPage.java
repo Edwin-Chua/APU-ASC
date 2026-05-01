@@ -15,7 +15,6 @@ public class CustomerRegisterPage extends JPanel {
     private final CustomerDAO customerDAO = new CustomerDAO();
 
     private JTextField txtName;
-    private JTextField txtContact;
     private JTextField txtEmail;
     private JTextArea txtAddress;
     private JPasswordField txtPassword;
@@ -154,13 +153,6 @@ public class CustomerRegisterPage extends JPanel {
 
         form.add(UIComponent.verticalGap(12));
 
-        form.add(fieldLabel("Contact Number"));
-        form.add(UIComponent.verticalGap(5));
-        txtContact = stretchedField("e.g. 0123456789");
-        form.add(txtContact);
-
-        form.add(UIComponent.verticalGap(12));
-
         form.add(fieldLabel("Email Address"));
         form.add(UIComponent.verticalGap(5));
         txtEmail = stretchedField("e.g. you@email.com");
@@ -268,13 +260,12 @@ public class CustomerRegisterPage extends JPanel {
 
     private void handleSubmit() {
         String name = txtName.getText().trim();
-        String contact = txtContact.getText().trim();
         String email = txtEmail.getText().trim();
         String address = txtAddress.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
         String confirm = new String(txtConfirmPassword.getPassword()).trim();
 
-        if (name.isEmpty() || contact.isEmpty() || email.isEmpty() || address.isEmpty()
+        if (name.isEmpty() || email.isEmpty() || address.isEmpty()
                 || password.isEmpty() || confirm.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please fill in all fields.",
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
@@ -283,12 +274,6 @@ public class CustomerRegisterPage extends JPanel {
 
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
             JOptionPane.showMessageDialog(frame, "Invalid email format.",
-                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (!contact.matches("\\d{9,12}")) {
-            JOptionPane.showMessageDialog(frame, "Contact number must be 9-12 digits.",
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -305,7 +290,7 @@ public class CustomerRegisterPage extends JPanel {
             return;
         }
 
-        String error = customerDAO.registerCustomer(name, password, contact, email, address);
+        String error = customerDAO.registerCustomer(name, password, email, address);
         if (error != null) {
             JOptionPane.showMessageDialog(frame, error,
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
@@ -322,7 +307,6 @@ public class CustomerRegisterPage extends JPanel {
 
     private void clearFields() {
         txtName.setText("");
-        txtContact.setText("");
         txtEmail.setText("");
         txtAddress.setText("");
         txtPassword.setText("");

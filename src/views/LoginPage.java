@@ -14,7 +14,7 @@ public class LoginPage extends JPanel {
     private final MainFrame frame;
     private final UserDAO userDAO = new UserDAO();
 
-    private JTextField txtEmail;        // ← 改成 email
+    private JTextField txtEmail;
     private JPasswordField txtPassword;
 
     private JToggleButton tglManager;
@@ -335,7 +335,7 @@ public class LoginPage extends JPanel {
             return;
         }
 
-        // ── Customer: authenticate via email in customer.txt ──────────────────
+        // ── Customer ──────────────────────────────────────────────────────────
         if (role.equals("Customer")) {
             models.customer_function.CustomerDAO customerDAO =
                 new models.customer_function.CustomerDAO();
@@ -350,12 +350,11 @@ public class LoginPage extends JPanel {
                 return;
             }
 
-            // Store a lightweight User object for consistency
             User user = new User(
                 customer.getCustomerID(),
                 customer.getName(),
                 customer.getPassword(),
-                customer.getPhoneNumber(),
+                "",
                 customer.getEmail(),
                 "Customer",
                 "Approved",
@@ -364,8 +363,8 @@ public class LoginPage extends JPanel {
             frame.setLoggedInUser(user);
             frame.showCustomerPage(customer.getCustomerID());
 
-        // ── Staff roles: authenticate via email in role-specific txt ──────────
-        } else {
+        // ── Manager ───────────────────────────────────────────────────────────
+        } else if (role.equals("Manager")) {
             User user = userDAO.authenticateStaff(email, password, role);
 
             if (user == null) {
@@ -377,9 +376,10 @@ public class LoginPage extends JPanel {
             frame.setLoggedInUser(user);
             frame.showPage(MainFrame.PAGE_MANAGER);
 
-        // ── CounterStaff: authenticate via counterStaff.txt ───────────────────
+        // ── CounterStaff ──────────────────────────────────────────────────────
         } else if (role.equals("CounterStaff")) {
             User user = userDAO.authenticateCounterStaffByEmail(email, password);
+
             if (user == null) {
                 JOptionPane.showMessageDialog(frame,
                     "Incorrect email or password.",
@@ -389,9 +389,10 @@ public class LoginPage extends JPanel {
             frame.setLoggedInUser(user);
             frame.showPage(MainFrame.PAGE_COUNTERSTAFF);
 
-        // ── Technician: authenticate via technician.txt ───────────────────────
+        // ── Technician ────────────────────────────────────────────────────────
         } else if (role.equals("Technician")) {
             User user = userDAO.authenticateTechnicianByEmail(email, password);
+
             if (user == null) {
                 JOptionPane.showMessageDialog(frame,
                     "Incorrect email or password.",
@@ -400,8 +401,6 @@ public class LoginPage extends JPanel {
             }
             frame.setLoggedInUser(user);
             frame.showPage(MainFrame.PAGE_TECHNICIAN);
-        } else {
-            return;
         }
 
         // ── Clear fields ──────────────────────────────────────────────────────

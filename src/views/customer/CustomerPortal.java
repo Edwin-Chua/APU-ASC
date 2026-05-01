@@ -705,6 +705,7 @@ public class CustomerPortal extends JFrame {
             int row = table.getSelectedRow();
             if (row < 0 || history == null || row >= history.size()) return;
             selID[0] = history.get(row).getAppointmentID();
+            String apptStatus = history.get(row).getStatus();  // ← 新增
             Feedback ex = feedbackDAO.getFeedbackByAppointmentID(selID[0]);
             if (ex != null) {
                 fbArea.setEnabled(false); fbArea.setText(ex.getComment());
@@ -714,6 +715,12 @@ public class CustomerPortal extends JFrame {
                 submitFb.setEnabled(false);
                 fbHint.setText("You have already submitted feedback for this appointment.");
                 fbHint.setForeground(DS.FG_GREEN);
+            } else if (!"Completed".equalsIgnoreCase(apptStatus)) {  // ← 新增分支
+                fbArea.setEnabled(false); fbArea.setText(""); fbArea.setForeground(DS.FG_SECONDARY);
+                ratingBox.setEnabled(false); ratingBox.setSelectedIndex(0);
+                submitFb.setEnabled(false);
+                fbHint.setText("Feedback is only available for completed appointments.");
+                fbHint.setForeground(DS.FG_SECONDARY);
             } else {
                 fbArea.setEnabled(true); fbArea.setText(""); fbArea.setForeground(DS.FG_LABEL);
                 ratingBox.setEnabled(true); ratingBox.setSelectedIndex(0);
@@ -786,7 +793,6 @@ public class CustomerPortal extends JFrame {
         JLabel viewID    = new JLabel();
         JLabel viewName  = new JLabel();
         JLabel viewEmail = new JLabel();
-        JLabel viewPhone = new JLabel();
         JLabel viewAddr  = new JLabel();
         JLabel viewDate  = new JLabel();
         JLabel hdrName   = new JLabel();
@@ -820,7 +826,6 @@ public class CustomerPortal extends JFrame {
             viewID.setText(customer.getCustomerID());
             viewName.setText(customer.getName());
             viewEmail.setText(customer.getEmail());
-            viewPhone.setText(customer.getPhoneNumber());
             viewAddr.setText(customer.getAddress());
             viewDate.setText(customer.getRegisteredDate().toString());
             hdrName.setText(customer.getName());
@@ -871,8 +876,6 @@ public class CustomerPortal extends JFrame {
         pDivider(infoCard, separatorClr);
         pInfoRow(infoCard, "Email",        viewEmail, labelGrey, textDark);
         pDivider(infoCard, separatorClr);
-        pInfoRow(infoCard, "Phone",        viewPhone, labelGrey, textDark);
-        pDivider(infoCard, separatorClr);
         pInfoRow(infoCard, "Address",      viewAddr,  labelGrey, textDark);
         pDivider(infoCard, separatorClr);
         pInfoRow(infoCard, "Member Since", viewDate,  labelGrey, textDark);
@@ -886,7 +889,7 @@ public class CustomerPortal extends JFrame {
         JButton btnDel    = appleLink("Delete", dangerRed);
 
         JPanel actCard = appleCard(cardBg, separatorClr);
-        pActionRow(actCard, "Edit Profile",    "Update your name, email, phone, and address", btnEdit,   textDark, labelGrey);
+        pActionRow(actCard, "Edit Profile",    "Update your name, email and address",         btnEdit,   textDark, labelGrey);
         pDivider(actCard, separatorClr);
         pActionRow(actCard, "Change Password", "Update your account password",                btnChgPwd, textDark, labelGrey);
         pDivider(actCard, separatorClr);
@@ -901,7 +904,6 @@ public class CustomerPortal extends JFrame {
 
         JTextField eName  = appleField();
         JTextField eEmail = appleField();
-        JTextField ePhone = appleField();
         JTextField eAddr  = appleField();
 
         JPanel editTop = new JPanel(new BorderLayout());
@@ -925,8 +927,6 @@ public class CustomerPortal extends JFrame {
         pEditRow(editCard, "Name",    eName,  labelGrey);
         pDivider(editCard, separatorClr);
         pEditRow(editCard, "Email",   eEmail, labelGrey);
-        pDivider(editCard, separatorClr);
-        pEditRow(editCard, "Phone",   ePhone, labelGrey);
         pDivider(editCard, separatorClr);
         pEditRow(editCard, "Address", eAddr,  labelGrey);
         edit.add(editCard);
@@ -974,7 +974,6 @@ public class CustomerPortal extends JFrame {
             eIdLbl.setText(customer.getCustomerID());
             eName.setText(customer.getName());
             eEmail.setText(customer.getEmail());
-            ePhone.setText(customer.getPhoneNumber());
             eAddr.setText(customer.getAddress());
             pCards.show(pSwitch, "EDIT");
         });
@@ -983,13 +982,12 @@ public class CustomerPortal extends JFrame {
 
         btnSave.addActionListener(e -> {
             String nn = eName.getText().trim(), ne = eEmail.getText().trim();
-            String np = ePhone.getText().trim(), na = eAddr.getText().trim();
-            if (nn.isEmpty() || ne.isEmpty() || np.isEmpty() || na.isEmpty()) { dlgWarn("All fields are required."); return; }
+            String na = eAddr.getText().trim();
+            if (nn.isEmpty() || ne.isEmpty() || na.isEmpty()) { dlgWarn("All fields are required."); return; }
             if (!ne.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) { dlgWarn("Please enter a valid email address."); return; }
-            if (!np.matches("^\\d{10,11}$")) { dlgWarn("Phone number must be 10–11 digits."); return; }
-            if (nn.contains("|") || ne.contains("|") || np.contains("|") || na.contains("|")) { dlgWarn("Fields cannot contain the '|' character."); return; }
+            if (nn.contains("|") || ne.contains("|") || na.contains("|")) { dlgWarn("Fields cannot contain the '|' character."); return; }
             if (dlgConfirm("Save profile changes?") != JOptionPane.YES_OPTION) return;
-            customer.setName(nn); customer.setEmail(ne); customer.setPhone(np); customer.setAddress(na);
+            customer.setName(nn); customer.setEmail(ne); customer.setAddress(na);
             if (customerDAO.updateCustomer(customer)) {
                 dlgInfo("Profile updated successfully.");
                 load.run(); avatarCircle.repaint(); pCards.show(pSwitch, "VIEW");

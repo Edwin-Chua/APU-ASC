@@ -10,6 +10,8 @@ import views.customer.CustomerRegisterPage;
 import views.manager.ManagerDashboard;
 import views.shared.AppTheme;
 import views.shared.BaseDashboard;
+import views.staff.CounterStaffDashboard;
+import views.technician.TechnicianDashboard;
 
 public class MainFrame extends JFrame {
 

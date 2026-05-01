@@ -1,47 +1,40 @@
 package models.customer_function;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TechnicianDAO {
-    private static final String FILE_PATH = "src/txtFiles/technicians.txt";
+
+    private static final String FILE_PATH = "src/txtFiles/technician.txt";
+
+    // technician.txt format (row 1 = header, skip it):
+    // technician_id|technician_name|technician_email|technician_password|status|specialization
 
     public List<Technician> getAllTechnicianList() {
-        List<Technician> techList = new ArrayList<>();
-
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(FILE_PATH));
+        List<Technician> list = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
-
+            boolean firstLine = true;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length == 6) {
-                    Technician t = new Technician(
-                        parts[0], 
-                        parts[1], 
-                        parts[2], 
-                        parts[3], 
-                        parts[4], 
-                        parts[5]);
-                    techList.add(t);
-                }
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                if (firstLine) { firstLine = false; continue; }
+                String[] p = line.split("\\|", -1);
+                if (p.length >= 6)
+                    list.add(new Technician(
+                        p[0].trim(), p[1].trim(), p[2].trim(),
+                        p[3].trim(), p[4].trim(), p[5].trim()));
             }
-            br.close();
         } catch (IOException e) {
-            System.out.println("Error reading technician data: " + e.getMessage());
+            System.err.println("Error reading technician.txt: " + e.getMessage());
         }
-        return techList;
+        return list;
     }
 
     public String getTechnicianName(String technicianID) {
-        for (Technician t : getAllTechnicianList()) {
-            if (t.getTechnicianID().equals(technicianID)) {
-                return t.getTechnicianName();
-            }
-        }
+        for (Technician t : getAllTechnicianList())
+            if (t.getTechnicianID().equals(technicianID)) return t.getTechnicianName();
         return null;
     }
 }

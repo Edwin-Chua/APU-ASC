@@ -1,62 +1,51 @@
 package models.customer_function;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServiceItemDAO {
 
     private static final String FILE_PATH = "src/txtFiles/service_items.txt";
 
+    // service_items.txt format (row 1 = header, skip it):
+    // service_item_id|service_price_id|category|duration|description
+
     public List<ServiceItem> getAllServiceItems() {
         List<ServiceItem> list = new ArrayList<>();
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(FILE_PATH));
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
+            boolean firstLine = true;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length == 5) {
-                    ServiceItem s = new ServiceItem(
-                        parts[0], 
-                        parts[1], 
-                        parts[2], 
-                        parts[3], 
-                        parts[4]  
-                    );
-                    list.add(s);
-                }
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                if (firstLine) { firstLine = false; continue; }
+                String[] p = line.split("\\|", -1);
+                if (p.length >= 5)
+                    list.add(new ServiceItem(
+                        p[0].trim(), p[1].trim(), p[2].trim(), p[3].trim(), p[4].trim()));
             }
-            br.close();
         } catch (IOException e) {
-            System.out.println("Error reading service_items.txt: " + e.getMessage());
+            System.err.println("Error reading service_items.txt: " + e.getMessage());
         }
         return list;
     }
 
     public ServiceItem getServiceItemByID(String serviceItemID) {
-        for (ServiceItem s : getAllServiceItems()) {
-            if (s.getServiceItemID().equals(serviceItemID)) {
-                return s;
-            }
-        }
+        for (ServiceItem s : getAllServiceItems())
+            if (s.getServiceItemID().equals(serviceItemID)) return s;
         return null;
     }
 
     public List<ServiceItem> getServiceItemsByCategory(String category) {
         List<ServiceItem> list = new ArrayList<>();
-        for (ServiceItem s : getAllServiceItems()) {
-            if (s.getCategory().equals(category)) {
-                list.add(s);
-            }
-        }
+        for (ServiceItem s : getAllServiceItems())
+            if (s.getCategory().equals(category)) list.add(s);
         return list;
     }
 
     public String getServiceTypeByServiceItemID(String serviceItemID) {
         ServiceItem s = getServiceItemByID(serviceItemID);
-        if (s != null) {
-            return s.getCategory();
-        }
-        return null;
+        return s != null ? s.getCategory() : null;
     }
-
 }
