@@ -1,5 +1,2 @@
-C001|123456|SY|szeying@gmail.com|0123456788|123 Jalan Jaya|Approved|2024-01-01
-C002|123456|Isac Lim|isac@gmail.com|0123456788|123 Jalan Jaya|Approved|2024-01-01
-C003|Thomas|12345678|0167789908|thomas@gmail.com|Customer|Approved|2026-04-09
-C004|123456|shit|shit@gmail.com|0123456788|123 Jalan Jaya|Pending|2024-01-01
-C005|12345678|Ivan|ivan@gmail.com|016657890|456, Jalan Ampang, KL|Pending|2026-04-09
+C001|123456|Sze Ying|szeying@gmail.com|0123456788|123 Jalan Jaya|2024-01-01
+C002|123456|Jellyfish|isac@gmail.com|0123456788|123 Jalan Jaya|2024-01-01

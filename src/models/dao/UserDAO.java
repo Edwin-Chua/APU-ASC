@@ -74,9 +74,11 @@ public class UserDAO {
                 line = line.trim();
                 if (line.isEmpty()) continue;
 
+                // Skip header row
                 if (firstLine) {
                     firstLine = false;
-                    if (line.toLowerCase().startsWith("userid|")) continue;
+                    if (line.toLowerCase().startsWith("managerid|")
+                            || line.toLowerCase().startsWith("userid|")) continue;
                 }
 
                 String[] parts = line.split("\\|", -1);

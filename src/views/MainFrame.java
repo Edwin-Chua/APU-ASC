@@ -36,8 +36,8 @@ public class MainFrame extends JFrame {
         addPage(PAGE_REGISTER,     new CustomerRegisterPage(this));
         addPage(PAGE_LOGIN,        new LoginPage(this));
         addPage(PAGE_MANAGER,      new ManagerDashboard(this));
-        addPage(PAGE_COUNTERSTAFF, placeholder("Counter Staff Dashboard"));
-        addPage(PAGE_TECHNICIAN,   placeholder("Technician Dashboard"));
+        addPage(PAGE_COUNTERSTAFF, new CounterStaffDashboard(this));
+        addPage(PAGE_TECHNICIAN,   new TechnicianDashboard(this));
 
         add(mainPanel, BorderLayout.CENTER);
         showPage(PAGE_LOGIN);

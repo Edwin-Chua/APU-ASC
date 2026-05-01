@@ -24,8 +24,3 @@ hs_err_pid*
 replay_pid*
 
 /bin/
-
-src/txtFiles/manager.txt
-src/txtFiles/counterStaff.txt
-src/txtFiles/technician.txt
-src/txtFiles/customer.txt

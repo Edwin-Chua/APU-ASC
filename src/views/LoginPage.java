@@ -374,22 +374,34 @@ public class LoginPage extends JPanel {
                     "Login Failed", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
             frame.setLoggedInUser(user);
+            frame.showPage(MainFrame.PAGE_MANAGER);
 
-            switch (user.getRole()) {
-                case "Manager":
-                    frame.showPage(MainFrame.PAGE_MANAGER);
-                    break;
-                case "CounterStaff":
-                    frame.showPage(MainFrame.PAGE_COUNTERSTAFF);
-                    break;
-                case "Technician":
-                    frame.showPage(MainFrame.PAGE_TECHNICIAN);
-                    break;
-                default:
-                    JOptionPane.showMessageDialog(frame, "Unknown role: " + user.getRole());
+        // ── CounterStaff: authenticate via counterStaff.txt ───────────────────
+        } else if (role.equals("CounterStaff")) {
+            User user = userDAO.authenticateCounterStaffByEmail(email, password);
+            if (user == null) {
+                JOptionPane.showMessageDialog(frame,
+                    "Incorrect email or password.",
+                    "Login Failed", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+            frame.setLoggedInUser(user);
+            frame.showPage(MainFrame.PAGE_COUNTERSTAFF);
+
+        // ── Technician: authenticate via technician.txt ───────────────────────
+        } else if (role.equals("Technician")) {
+            User user = userDAO.authenticateTechnicianByEmail(email, password);
+            if (user == null) {
+                JOptionPane.showMessageDialog(frame,
+                    "Incorrect email or password.",
+                    "Login Failed", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            frame.setLoggedInUser(user);
+            frame.showPage(MainFrame.PAGE_TECHNICIAN);
+        } else {
+            return;
         }
 
         // ── Clear fields ──────────────────────────────────────────────────────
