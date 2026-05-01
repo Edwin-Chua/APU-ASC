@@ -447,7 +447,7 @@ public final class UIComponent {
             AppTheme.PADDING_ROW, AppTheme.PADDING_CARD,
             AppTheme.PADDING_ROW, AppTheme.PADDING_CARD
         ));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
 
         JLabel lbl = new JLabel(label);
         lbl.setFont(AppTheme.FONT_SMALL);
@@ -487,5 +487,143 @@ public final class UIComponent {
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         sep.setForeground(AppTheme.SEPARATOR);
         return sep;
+    }
+
+    // ─── Profile components ───────────────────────────────────────────────────
+
+    /**
+     * Circular avatar panel that paints initials from the given label's text.
+     * Pass a JLabel whose text you update separately; call repaint() on the
+     * returned panel after updating the label.
+     */
+    public static JPanel createAvatarCircle(JLabel initialsLabel) {
+        Color avatarBg = new Color(0, 122, 255);
+        JPanel circle = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int size = 80;
+                int cx = getWidth() / 2;
+                g2.setColor(avatarBg);
+                g2.fillOval(cx - size / 2, 4, size, size);
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 30));
+                FontMetrics fm = g2.getFontMetrics();
+                String text = initialsLabel.getText();
+                if (text == null) text = "";
+                g2.drawString(text,
+                    cx - fm.stringWidth(text) / 2,
+                    4 + (size + fm.getAscent() - fm.getDescent()) / 2);
+                g2.dispose();
+            }
+        };
+        circle.setOpaque(false);
+        circle.setPreferredSize(new Dimension(0, 92));
+        circle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 92));
+        circle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return circle;
+    }
+
+    /**
+     * An action row inside a card: title + subtitle stacked on the left,
+     * a button on the right. Used for "Edit Profile", "Change Password", etc.
+     */
+    public static JPanel createActionRow(String title, String subtitle, JButton btn) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(
+            AppTheme.PADDING_ROW, AppTheme.PADDING_CARD,
+            AppTheme.PADDING_ROW, AppTheme.PADDING_CARD
+        ));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+
+        JPanel textBlock = new JPanel();
+        textBlock.setLayout(new BoxLayout(textBlock, BoxLayout.Y_AXIS));
+        textBlock.setOpaque(false);
+
+        JLabel titleLbl = new JLabel(title);
+        titleLbl.setFont(AppTheme.FONT_SMALL);
+        titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
+
+        JLabel subLbl = new JLabel(subtitle);
+        subLbl.setFont(AppTheme.FONT_CAPTION);
+        subLbl.setForeground(AppTheme.TEXT_MUTED);
+
+        textBlock.add(titleLbl);
+        textBlock.add(Box.createRigidArea(new Dimension(0, 2)));
+        textBlock.add(subLbl);
+
+        row.add(textBlock, BorderLayout.CENTER);
+        row.add(btn, BorderLayout.EAST);
+        return row;
+    }
+
+    public static JScrollPane createAppleScrollPane(JComponent content) {
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(null);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(AppTheme.BG_CONTENT);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getVerticalScrollBar().setUnitIncrement(14);
+    
+        JScrollBar vsb = scroll.getVerticalScrollBar();
+        vsb.setOpaque(false);
+        vsb.setPreferredSize(new Dimension(AppTheme.SCROLL_BAR_WIDTH, Integer.MAX_VALUE));
+        vsb.setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            private boolean hover = false;
+    
+            @Override protected void configureScrollBarColors() {}
+    
+            @Override protected JButton createDecreaseButton(int orientation) { return zeroButton(); }
+            @Override protected JButton createIncreaseButton(int orientation) { return zeroButton(); }
+    
+            private JButton zeroButton() {
+                JButton btn = new JButton();
+                btn.setPreferredSize(new Dimension(0, 0));
+                btn.setMinimumSize(new Dimension(0, 0));
+                btn.setMaximumSize(new Dimension(0, 0));
+                return btn;
+            }
+    
+            @Override
+            protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+                // transparent track for cleaner Apple look
+            }
+    
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle r) {
+                if (r == null || r.width <= 0 || r.height <= 0) return;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(hover ? AppTheme.SCROLL_THUMB_HOVER : AppTheme.SCROLL_THUMB);
+    
+                int pad = 1;
+                g2.fillRoundRect(
+                    r.x + pad, r.y + pad,
+                    r.width - pad * 2, r.height - pad * 2,
+                    AppTheme.SCROLL_THUMB_RADIUS, AppTheme.SCROLL_THUMB_RADIUS
+                );
+                g2.dispose();
+            }
+    
+            @Override
+            protected void setThumbBounds(int x, int y, int width, int height) {
+                super.setThumbBounds(x, y, width, height);
+                scrollbar.repaint();
+            }
+    
+            @Override
+            protected TrackListener createTrackListener() {
+                return new TrackListener() {
+                    @Override public void mouseEntered(MouseEvent e) { hover = true; scrollbar.repaint(); }
+                    @Override public void mouseExited(MouseEvent e)  { hover = false; scrollbar.repaint(); }
+                    @Override public void mouseMoved(MouseEvent e)   { scrollbar.repaint(); }
+                };
+            }
+        });
+    
+        return scroll;
     }
 }
