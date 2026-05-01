@@ -10,7 +10,7 @@ public class CustomerDAO {
     private static final String FILE_PATH = "src/txtFiles/customer.txt";
 
     // customer.txt format (row 1 = header, skip it):
-    // customer_id|password|customer_name|customer_email|customer_address|status|register_date
+    // customer_id|password|customer_name|customer_email|customer_phone|status|register_date
 
     private Customer parseLine(String line) {
         String[] p = line.split("\\|", -1);
@@ -24,7 +24,7 @@ public class CustomerDAO {
     private String toLine(Customer c) {
         return String.join("|",
             c.getCustomerID(), c.getPassword(), c.getName(),
-            c.getEmail(), c.getAddress(), c.getStatus(),
+            c.getEmail(), c.getPhoneNumber(), c.getStatus(),
             c.getRegisteredDate().toString()
         );
     }
@@ -85,7 +85,7 @@ public class CustomerDAO {
 
     private boolean saveCustomers(List<Customer> customers) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            bw.write("customer_id|password|customer_name|customer_email|customer_address|status|register_date");
+            bw.write("customer_id|password|customer_name|customer_email|customer_phone|status|register_date");
             bw.newLine();
             for (Customer c : customers) {
                 bw.write(toLine(c));
@@ -126,13 +126,13 @@ public class CustomerDAO {
     }
 
     public String registerCustomer(String name, String password,
-                                   String email, String address) {
+                                   String email, String phoneNumber) {
         if (isEmailExists(email))
             return "This email is already registered. Please use a different email.";
 
         String id   = generateCustomerID();
         String date = LocalDate.now().toString();
-        Customer c  = new Customer(id, password, name, email, address, "Pending", date);
+        Customer c  = new Customer(id, password, name, email, phoneNumber, "Pending", date);
 
         List<Customer> customers = getAllCustomers();
         customers.add(c);

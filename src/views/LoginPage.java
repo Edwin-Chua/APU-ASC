@@ -350,11 +350,18 @@ public class LoginPage extends JPanel {
                 return;
             }
 
+            if (!"Approved".equalsIgnoreCase(customer.getStatus())) {
+                JOptionPane.showMessageDialog(frame,
+                    "Your account is pending approval.\nPlease wait for manager approval before logging in.",
+                    "Access Denied", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             User user = new User(
                 customer.getCustomerID(),
                 customer.getName(),
                 customer.getPassword(),
-                "",
+                customer.getPhoneNumber(),
                 customer.getEmail(),
                 "Customer",
                 "Approved",

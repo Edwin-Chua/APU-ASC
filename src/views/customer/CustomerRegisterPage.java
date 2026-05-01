@@ -16,7 +16,7 @@ public class CustomerRegisterPage extends JPanel {
 
     private JTextField txtName;
     private JTextField txtEmail;
-    private JTextArea txtAddress;
+    private JTextField txtPhoneNumber;
     private JPasswordField txtPassword;
     private JPasswordField txtConfirmPassword;
 
@@ -160,23 +160,10 @@ public class CustomerRegisterPage extends JPanel {
 
         form.add(UIComponent.verticalGap(12));
 
-        form.add(fieldLabel("Address"));
+        form.add(fieldLabel("Phone Number"));
         form.add(UIComponent.verticalGap(5));
-        txtAddress = new JTextArea();
-        txtAddress.setLineWrap(true);
-        txtAddress.setWrapStyleWord(true);
-        txtAddress.setFont(AppTheme.FONT_BODY);
-        txtAddress.setForeground(AppTheme.TEXT_PRIMARY);
-        txtAddress.setBackground(Color.WHITE);
-        txtAddress.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER_CARD),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        JScrollPane addressScroll = new JScrollPane(txtAddress);
-        addressScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addressScroll.setPreferredSize(new Dimension(Integer.MAX_VALUE, 90));
-        addressScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
-        form.add(addressScroll);
+        txtPhoneNumber = stretchedField("e.g. 0123456789");
+        form.add(txtPhoneNumber);
 
         form.add(UIComponent.verticalGap(12));
 
@@ -261,11 +248,11 @@ public class CustomerRegisterPage extends JPanel {
     private void handleSubmit() {
         String name = txtName.getText().trim();
         String email = txtEmail.getText().trim();
-        String address = txtAddress.getText().trim();
+        String phoneNumber = txtPhoneNumber.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
         String confirm = new String(txtConfirmPassword.getPassword()).trim();
 
-        if (name.isEmpty() || email.isEmpty() || address.isEmpty()
+        if (name.isEmpty() || email.isEmpty() || phoneNumber.isEmpty()
                 || password.isEmpty() || confirm.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please fill in all fields.",
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
@@ -274,6 +261,12 @@ public class CustomerRegisterPage extends JPanel {
 
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
             JOptionPane.showMessageDialog(frame, "Invalid email format.",
+                    "Registration Failed", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (!phoneNumber.matches("\\d{9,12}")) {
+            JOptionPane.showMessageDialog(frame, "Phone number must be 9-12 digits.",
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -290,7 +283,7 @@ public class CustomerRegisterPage extends JPanel {
             return;
         }
 
-        String error = customerDAO.registerCustomer(name, password, email, address);
+        String error = customerDAO.registerCustomer(name, password, email, phoneNumber);
         if (error != null) {
             JOptionPane.showMessageDialog(frame, error,
                     "Registration Failed", JOptionPane.WARNING_MESSAGE);
@@ -308,7 +301,7 @@ public class CustomerRegisterPage extends JPanel {
     private void clearFields() {
         txtName.setText("");
         txtEmail.setText("");
-        txtAddress.setText("");
+        txtPhoneNumber.setText("");
         txtPassword.setText("");
         txtConfirmPassword.setText("");
     }
