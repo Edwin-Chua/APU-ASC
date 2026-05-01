@@ -206,6 +206,11 @@ public class LoginPage extends JPanel {
         tglTechnician = makeRoleToggle("Technician");
         tglCustomer   = makeRoleToggle("Customer");
 
+        tglManager.addActionListener(e -> autofillCredentials("Manager"));
+        tglStaff.addActionListener(e -> autofillCredentials("CounterStaff"));
+        tglTechnician.addActionListener(e -> autofillCredentials("Technician"));
+        tglCustomer.addActionListener(e -> autofillCredentials("Customer"));
+
         ButtonGroup group = new ButtonGroup();
         group.add(tglManager);
         group.add(tglStaff);
@@ -427,4 +432,24 @@ public class LoginPage extends JPanel {
         frame.showPage(MainFrame.PAGE_REGISTER);
     }
 
+    private void autofillCredentials(String role) {
+        switch (role) {
+            case "Manager":
+                txtEmail.setText("edwin@gmail.com");
+                txtPassword.setText("edwin123");
+                break;
+            case "CounterStaff":
+                txtEmail.setText("staffa@gmail.com");
+                txtPassword.setText("staff1234");
+                break;
+            case "Technician":
+                txtEmail.setText("ahmad@autoserve.com");
+                txtPassword.setText("tech123");
+                break;
+            case "Customer":
+                txtEmail.setText("alice@email.com");
+                txtPassword.setText("alice123");
+                break;
+        }
+    }
 }

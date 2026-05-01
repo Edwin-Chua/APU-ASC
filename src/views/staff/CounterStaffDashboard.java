@@ -30,22 +30,22 @@ public class CounterStaffDashboard extends BaseDashboard {
 
     // Sub-pages
     private final CounterStaffRegisterCustomer  registerCustomerPage;
-    //private final CounterStaffViewAppointment   viewAppointmentPage;
-    //private final CounterStaffCreateAppointment createAppointmentPage;
+    private final CounterStaffViewAppointment   viewAppointmentPage;
+    private final CounterStaffCreateAppointment createAppointmentPage;
     //private final CounterStaffBilling           billingPage;
     private final CounterStaffProfile           profilePage;
 
     public CounterStaffDashboard(MainFrame frame) {
         super(frame);
         registerCustomerPage  = new CounterStaffRegisterCustomer(frame);
-        //viewAppointmentPage   = new CounterStaffViewAppointment(frame);
-        //createAppointmentPage = new CounterStaffCreateAppointment(frame);
+        viewAppointmentPage   = new CounterStaffViewAppointment(frame);
+        createAppointmentPage = new CounterStaffCreateAppointment(frame);
         //billingPage           = new CounterStaffBilling(frame);
         profilePage           = new CounterStaffProfile(frame);
 
         contentPanel.add(registerCustomerPage,  PAGE_REGISTER_CUSTOMER);
-        //contentPanel.add(viewAppointmentPage,   PAGE_VIEW_APPOINTMENT);
-        //contentPanel.add(createAppointmentPage, PAGE_CREATE_APPOINTMENT);
+        contentPanel.add(viewAppointmentPage,   PAGE_VIEW_APPOINTMENT);
+        contentPanel.add(createAppointmentPage, PAGE_CREATE_APPOINTMENT);
         //contentPanel.add(billingPage,           PAGE_BILLING);
         contentPanel.add(profilePage,           PAGE_PROFILE);
     }
