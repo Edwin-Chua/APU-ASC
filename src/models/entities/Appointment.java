@@ -11,7 +11,6 @@ public class Appointment {
     private String timeSlot;
     private String appointmentDate;
     private String status;
-    private String commentId;
     private String vehicleBrand;
     private String vehicleModel;
     private String vehiclePlate;
@@ -20,7 +19,7 @@ public class Appointment {
     public Appointment(String appointmentId, String customerId, String staffId,
                        String serviceTypeId, String technicianId, String serviceItemId,
                        String timeSlot, String appointmentDate,
-                       String status, String commentId,
+                       String status,
                        String vehicleBrand, String vehicleModel, String vehiclePlate,
                        String technicianFeedback) {
         this.appointmentId     = appointmentId;
@@ -32,7 +31,6 @@ public class Appointment {
         this.timeSlot          = timeSlot;
         this.appointmentDate   = appointmentDate;
         this.status            = status;
-        this.commentId         = commentId;
         this.vehicleBrand      = vehicleBrand;
         this.vehicleModel      = vehicleModel;
         this.vehiclePlate      = vehiclePlate;
@@ -49,7 +47,6 @@ public class Appointment {
     public String getTimeSlot()           { return timeSlot; }
     public String getAppointmentDate()    { return appointmentDate; }
     public String getStatus()             { return status; }
-    public String getCommentId()          { return commentId; }
     public String getVehicleBrand()       { return vehicleBrand; }
     public String getVehicleModel()       { return vehicleModel; }
     public String getVehiclePlate()       { return vehiclePlate; }
@@ -65,7 +62,6 @@ public class Appointment {
     public void setTimeSlot(String v)           { this.timeSlot = v; }
     public void setAppointmentDate(String v)    { this.appointmentDate = v; }
     public void setStatus(String v)             { this.status = v; }
-    public void setCommentId(String v)          { this.commentId = v; }
     public void setVehicleBrand(String v)       { this.vehicleBrand = v; }
     public void setVehicleModel(String v)       { this.vehicleModel = v; }
     public void setVehiclePlate(String v)       { this.vehiclePlate = v; }

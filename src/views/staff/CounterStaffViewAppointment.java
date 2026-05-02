@@ -42,7 +42,6 @@ public class CounterStaffViewAppointment extends JPanel {
     // Pending card labels
     private JLabel            lblApptId, lblCustomer, lblService, lblVehicle, lblDateTime, lblStatus;
     private JComboBox<String> techCombo;
-    private JTextArea         notesArea;
     private JButton           btnApprove, btnReject;
 
     // Approved card labels
@@ -382,17 +381,6 @@ public class CounterStaffViewAppointment extends JPanel {
         techCombo = UIComponent.createComboBox(new String[]{});
         techBox.add(techCombo, BorderLayout.CENTER);
 
-        // Notes area
-        JLabel notesLbl = new JLabel("Remarks / Notes:");
-        notesLbl.setFont(AppTheme.FONT_SMALL);
-        notesLbl.setForeground(AppTheme.TEXT_SECONDARY);
-        notesLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        notesLbl.setBorder(BorderFactory.createEmptyBorder(10, 0, 4, 0));
-
-        notesArea = UIComponent.createTextArea("Optional notes...", 3);
-        notesArea.setPreferredSize(new Dimension(Integer.MAX_VALUE, 80));
-        notesArea.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         // Buttons
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 8, 0));
         btnRow.setOpaque(false);
@@ -412,8 +400,6 @@ public class CounterStaffViewAppointment extends JPanel {
         btnRow.add(btnReject);
 
         right.add(techBox);
-        right.add(notesLbl);
-        right.add(notesArea);
         right.add(btnRow);
 
         card.add(right, BorderLayout.EAST);
@@ -442,7 +428,7 @@ public class CounterStaffViewAppointment extends JPanel {
 
         JLabel[] vals   = {lblApprovedApptId, lblApprovedCustomer, lblApprovedService,
                            lblApprovedVehicle, lblApprovedDateTime, lblApprovedTech, lblApprovedStatus};
-        String[] fields = {"Appointment ID:", "Username:", "Service Requested:",
+        String[] fields = {"Appointment ID:", "Customer Name:", "Service Requested:",
                            "Vehicle:", "Scheduled Date/Time:", "Assigned Technician:", "Current Status:"};
 
         card.add(buildInfoGrid(fields, vals), BorderLayout.CENTER);
@@ -504,7 +490,7 @@ public class CounterStaffViewAppointment extends JPanel {
 
         JLabel[] vals   = {lblViewApptId, lblViewCustomer, lblViewService,
                            lblViewVehicle, lblViewDateTime, lblViewTech, lblViewStatus};
-        String[] fields = {"Appointment ID:", "Username:", "Service Requested:",
+        String[] fields = {"Appointment ID:", "Customer Name:", "Service Requested:",
                            "Vehicle:", "Scheduled Date/Time:", "Assigned Technician:", "Status:"};
 
         card.add(buildInfoGrid(fields, vals), BorderLayout.CENTER);
@@ -576,8 +562,6 @@ public class CounterStaffViewAppointment extends JPanel {
                     }
                 }
 
-                notesArea.setText("Optional notes...");
-                notesArea.setForeground(AppTheme.TEXT_MUTED);
                 showCard("pending");
                 break;
 
@@ -656,9 +640,8 @@ public class CounterStaffViewAppointment extends JPanel {
         }
 
         String techId = techSelected.split(" — ")[0].trim();
-        String notes  = notesArea.getText().equals("Optional notes...") ? "" : notesArea.getText().trim();
 
-        boolean ok = appointmentDAO.approveAppointment(selectedApptId, techId, staffId, notes);
+        boolean ok = appointmentDAO.approveAppointment(selectedApptId, techId, staffId);
         if (ok) {
             technicianDAO.updateWorkStatus(techId, "Busy");
             JOptionPane.showMessageDialog(this,
@@ -734,19 +717,32 @@ public class CounterStaffViewAppointment extends JPanel {
         showCard("hint"); // always reset to hint on reload
 
         String statusFilter = (String) filterStatus.getSelectedItem();
-        String dateFilter   = filterDate.getText().trim(); // dd/MM/yyyy from picker
+        String dateFilter   = filterDate.getText().trim();
 
-        // Convert picker date (dd/MM/yyyy) to match appointment date format (yyyy-MM-dd)
+        // Normalise whatever the picker returns → yyyy-MM-dd for comparison
         String dateFilterISO = "";
         if (!dateFilter.isEmpty()) {
+            // Try yyyy-MM-dd first (picker native format)
             try {
-                LocalDate picked = LocalDate.parse(dateFilter,
-                    DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                dateFilterISO = picked.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            } catch (Exception ignored) {}
+                LocalDate.parse(dateFilter, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                dateFilterISO = dateFilter; // already correct format
+            } catch (Exception e1) {
+                // Try dd/MM/yyyy fallback
+                try {
+                    LocalDate picked = LocalDate.parse(dateFilter,
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    dateFilterISO = picked.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } catch (Exception e2) {
+                    // Try MM/dd/yyyy fallback
+                    try {
+                        LocalDate picked = LocalDate.parse(dateFilter,
+                            DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+                        dateFilterISO = picked.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    } catch (Exception ignored) {}
+                }
+            }
         }
-        final String isoDate   = dateFilterISO;
-        final String dmyDate   = dateFilter; // keep dd/MM/yyyy as fallback
+        final String isoDate = dateFilterISO;
 
         List<Appointment> list = appointmentDAO.getAllAppointments();
         int count = 0;
@@ -755,8 +751,7 @@ public class CounterStaffViewAppointment extends JPanel {
             boolean matchStatus = statusFilter.equals("All Status")
                 || a.getStatus().equalsIgnoreCase(statusFilter);
             boolean matchDate = isoDate.isEmpty()
-                || a.getAppointmentDate().equals(isoDate)
-                || a.getAppointmentDate().equals(dmyDate);
+                || a.getAppointmentDate().equals(isoDate);
             if (!matchStatus || !matchDate) continue;
 
             String vehicle = a.getVehicleBrand() + " " + a.getVehicleModel()
@@ -789,7 +784,7 @@ public class CounterStaffViewAppointment extends JPanel {
             models.dao.CustomerDAO cDao = new models.dao.CustomerDAO();
             for (String[] c : cDao.getAllCustomers()) {
                 if (c[0].trim().equals(customerId)) {
-                    return c[1].trim(); 
+                    return c[2].trim(); // index 2 = customer_name
                 }
             }
             return customerId; // fallback if not found

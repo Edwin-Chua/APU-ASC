@@ -20,11 +20,10 @@ public class AppointmentDAO {
     // 6  time_slot
     // 7  appointment_date
     // 8  status
-    // 9  comment_id
-    // 10 vehicle_brand
-    // 11 vehicle_model
-    // 12 vehicle_plate
-    // 13 technician_feedback
+    // 9  vehicle_brand
+    // 10 vehicle_model
+    // 11 vehicle_plate
+    // 12 technician_feedback
 
     // ─── Read all ──────────────────────────────────────────────────────────────
     public List<Appointment> getAllAppointments() {
@@ -40,7 +39,7 @@ public class AppointmentDAO {
                 if (line.isEmpty()) continue;
                 if (first) { first = false; continue; } // skip header
                 String[] p = line.split("\\|", -1);
-                if (p.length < 14) continue;
+                if (p.length < 13) continue;             // 13 columns after removing comment_id
                 list.add(new Appointment(
                     p[0].trim(),  // appointmentId
                     p[1].trim(),  // customerId
@@ -48,14 +47,13 @@ public class AppointmentDAO {
                     p[3].trim(),  // serviceTypeId
                     p[4].trim(),  // technicianId
                     p[5].trim(),  // serviceItemId
-                    p[6].trim(),  // timeSlot
-                    p[7].trim(),  // appointmentDate
+                    p[7].trim(),  // timeSlot
+                    p[6].trim(),  // appointmentDate
                     p[8].trim(),  // status
-                    p[9].trim(),  // commentId
-                    p[10].trim(), // vehicleBrand
-                    p[11].trim(), // vehicleModel
-                    p[12].trim(), // vehiclePlate
-                    p[13].trim()  // technicianFeedback
+                    p[9].trim(),  // vehicleBrand
+                    p[10].trim(), // vehicleModel
+                    p[11].trim(), // vehiclePlate
+                    p[12].trim()  // technicianFeedback
                 ));
             }
         } catch (IOException e) {
@@ -81,15 +79,12 @@ public class AppointmentDAO {
         return null;
     }
 
-    // ─── Approve: status → Approved, assign technicianId + staffId + notes ─────
-    public boolean approveAppointment(String apptId, String techId, String staffId, String notes) {
+    // ─── Approve: status → Approved, assign technicianId + staffId ─────────────
+    public boolean approveAppointment(String apptId, String techId, String staffId) {
         return updateFields(apptId, map -> {
-            map.put(2, staffId);     // col 2 = staff_id
-            map.put(4, techId);      // col 4 = technician_id
-            map.put(8, "Approved");  // col 8 = status
-            if (notes != null && !notes.isEmpty()) {
-                map.put(9, notes);   // col 9 = comment_id
-            }
+            map.put(2, staffId);    // col 2 = staff_id
+            map.put(4, techId);     // col 4 = technician_id
+            map.put(8, "Approved"); // col 8 = status
         });
     }
 
@@ -122,7 +117,12 @@ public class AppointmentDAO {
             } else {
                 lines.add("appointment_id|customer_id|staff_id|service_type_id|technician_id"
                     + "|service_item_id|time_slot|appointment_date|status"
-                    + "|comment_id|vehicle_brand|vehicle_model|vehicle_plate|technician_feedback");
+                    + "|vehicle_brand|vehicle_model|vehicle_plate|technician_feedback");
+            }
+
+            // Auto-generate ID if not supplied
+            if (a.getAppointmentId() == null || a.getAppointmentId().isEmpty()) {
+                a.setAppointmentId(generateAppointmentId());
             }
 
             String newLine = String.join("|",
@@ -130,7 +130,7 @@ public class AppointmentDAO {
                 nvl(a.getStaffId()),       a.getServiceTypeId(),
                 nvl(a.getTechnicianId()),  nvl(a.getServiceItemId()),
                 a.getTimeSlot(),           a.getAppointmentDate(),
-                a.getStatus(),             nvl(a.getCommentId()),
+                a.getStatus(),
                 a.getVehicleBrand(),       a.getVehicleModel(),
                 a.getVehiclePlate(),       nvl(a.getTechnicianFeedback())
             );
@@ -143,23 +143,20 @@ public class AppointmentDAO {
         }
     }
 
-    public String generateAppointmentId() {
+    // ─── Generate next appointment ID ─────────────────────────────────────────
+    private String generateAppointmentId() {
         int max = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
-
                 String[] parts = line.split("\\|", -1);
                 if (parts[0].startsWith("A")) {
                     try {
                         int num = Integer.parseInt(parts[0].substring(1));
-                        if (num > max) {
-                            max = num;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
+                        if (num > max) max = num;
+                    } catch (NumberFormatException ignored) {}
                 }
             }
         } catch (IOException e) {
