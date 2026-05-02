@@ -104,7 +104,7 @@ public class TechnicianDAO {
     }
 
     public boolean updatePassword(String userId, String newPassword) {
-        return updateField(userId, 2, newPassword);
+        return updateField(userId, 3, newPassword); // col 3 = password
     }
 
     private boolean updateField(String userId, int colIndex, String newValue) {

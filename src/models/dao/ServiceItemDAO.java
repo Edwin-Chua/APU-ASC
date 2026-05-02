@@ -6,7 +6,7 @@ import java.util.*;
 
 public class ServiceItemDAO {
 
-    private static final String FILE_PATH = "src/txtFiles/serviceItem.txt";
+    private static final String FILE_PATH = "src/txtFiles/service_items.txt";
 
     // ─── Column index reference (pipe-delimited) ───────────────────────────────
     // 0  service_item_id
