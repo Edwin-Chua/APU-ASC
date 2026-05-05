@@ -60,10 +60,10 @@ public class CustomerPortal extends JFrame {
             return "SansSerif";
         }
 
-        // Geometry — increased radii for Apple feel
-        static final int RADIUS_CARD  = 14;
-        static final int RADIUS_BTN   = 10;
-        static final int RADIUS_FIELD = 8;
+        // Geometry
+        static final int RADIUS_CARD  = 10;
+        static final int RADIUS_BTN   = 8;
+        static final int RADIUS_FIELD = 6;
         static final int SIDEBAR_W    = 210;
     }
 
@@ -169,28 +169,21 @@ public class CustomerPortal extends JFrame {
 
         upcoming = appointmentDAO.getUpcomingAppointmentByCustomerID(customerID);
 
-        // Rounded appointment card
-        JPanel card = roundCard(DS.BG_CARD, DS.BORDER, DS.RADIUS_CARD);
-        card.setLayout(new BorderLayout());
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(DS.BG_CARD);
+        card.setBorder(new LineBorder(DS.BORDER, 1));
         card.setAlignmentX(LEFT_ALIGNMENT);
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
 
-        // Card header — rounded top only via paintComponent on inner panel
-        JPanel cardHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 10)) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(DS.BG_HEADER);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight() + DS.RADIUS_CARD, DS.RADIUS_CARD * 2, DS.RADIUS_CARD * 2);
-                g2.dispose();
-            }
-        };
-        cardHeader.setOpaque(false);
+        JPanel cardHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 10));
+        cardHeader.setBackground(DS.BG_HEADER);
         JLabel cardTitle = new JLabel("Next Upcoming Appointment");
         cardTitle.setForeground(DS.FG_WHITE);
         cardTitle.setFont(DS.bold(13));
         cardHeader.add(cardTitle);
-        if (upcoming != null) cardHeader.add(statusBadge(upcoming.getStatus()));
+        if (upcoming != null) {
+            cardHeader.add(statusBadge(upcoming.getStatus()));
+        }
         card.add(cardHeader, BorderLayout.NORTH);
 
         JPanel cardContent = new JPanel(new GridLayout(6, 2, 10, 10));
@@ -202,6 +195,7 @@ public class CustomerPortal extends JFrame {
             String tech    = technicianDAO.getTechnicianName(upcoming.getTechnicianID());
             String vehicle = upcoming.getVehicleBrand() + " " + upcoming.getVehicleModel()
                            + " — " + upcoming.getVehiclePlate();
+
             addCardRow(cardContent, "Appointment Date:", upcoming.getAppointmentDate().format(fmt));
             addCardRow(cardContent, "Appointment Time:", upcoming.getStartTime());
             addCardRow(cardContent, "Service Type:",     upcoming.getServiceType());
@@ -261,9 +255,9 @@ public class CustomerPortal extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 boolean hover = getModel().isRollover();
                 g2.setColor(hover ? new Color(245, 245, 255) : DS.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), DS.RADIUS_CARD * 2, DS.RADIUS_CARD * 2);
+                g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(hover ? DS.FG_NAV_ACTIVE : DS.BORDER);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, DS.RADIUS_CARD * 2, DS.RADIUS_CARD * 2);
+                g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
                 int tx = 18;
                 g2.setFont(DS.bold(13));
                 g2.setColor(DS.FG_LABEL);
@@ -323,6 +317,7 @@ public class CustomerPortal extends JFrame {
             catHeaderPanel.setAlignmentX(LEFT_ALIGNMENT);
             catHeaderPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
             catHeaderPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
+
             JLabel catLbl = label(cat + " Services", DS.bold(14), DS.FG_NAV_ACTIVE);
             catHeaderPanel.add(catLbl);
             body.add(catHeaderPanel);
@@ -341,6 +336,7 @@ public class CustomerPortal extends JFrame {
                 row2.setVisible(false);
                 wrapper.add(Box.createRigidArea(new Dimension(0, 12)));
                 wrapper.add(row2);
+
                 JButton toggle = ghostBtn("Show More");
                 toggle.setAlignmentX(LEFT_ALIGNMENT);
                 JPanel bp = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 6));
@@ -368,9 +364,12 @@ public class CustomerPortal extends JFrame {
         locTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         body.add(locTitle);
 
-        JPanel locCard = roundCard(DS.BG_CARD, DS.BORDER, DS.RADIUS_CARD);
+        JPanel locCard = new JPanel();
         locCard.setLayout(new BoxLayout(locCard, BoxLayout.Y_AXIS));
-        locCard.setBorder(new EmptyBorder(16, 20, 16, 20));
+        locCard.setBackground(DS.BG_CARD);
+        locCard.setBorder(new CompoundBorder(
+            new LineBorder(DS.BORDER, 1),
+            new EmptyBorder(16, 20, 16, 20)));
         locCard.setAlignmentX(LEFT_ALIGNMENT);
         locCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
 
@@ -396,9 +395,11 @@ public class CustomerPortal extends JFrame {
     }
 
     private JPanel serviceCard(ServiceItem item) {
-        JPanel card = roundCard(DS.BG_CARD, DS.BORDER, DS.RADIUS_CARD);
-        card.setLayout(new BorderLayout(0, 8));
-        card.setBorder(new EmptyBorder(14, 16, 14, 16));
+        JPanel card = new JPanel(new BorderLayout(0, 8));
+        card.setBackground(DS.BG_CARD);
+        card.setBorder(new CompoundBorder(
+            new LineBorder(DS.BORDER, 1),
+            new EmptyBorder(14, 16, 14, 16)));
 
         JLabel desc = new JLabel("<html><body style='width:150px; font-size:11px'>" + item.getDescription() + "</body></html>");
         desc.setFont(DS.regular(12));
@@ -406,7 +407,7 @@ public class CustomerPortal extends JFrame {
         card.add(desc, BorderLayout.CENTER);
 
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
-        bottomRow.setOpaque(false);
+        bottomRow.setBackground(DS.BG_CARD);
         JLabel dur = label("Duration: " + item.getDuration() + " hr", DS.regular(11), DS.FG_SECONDARY);
         bottomRow.add(dur);
         card.add(bottomRow, BorderLayout.SOUTH);
@@ -416,9 +417,10 @@ public class CustomerPortal extends JFrame {
 
     private void addLocationRow(JPanel panel, String lbl, String val) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
-        row.setOpaque(false);
+        row.setBackground(DS.BG_CARD);
         row.setAlignmentX(LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+
         JLabel l = label(lbl, DS.bold(12), DS.FG_NAV_ACTIVE);
         l.setPreferredSize(new Dimension(130, 20));
         row.add(l, BorderLayout.WEST);
@@ -449,9 +451,11 @@ public class CustomerPortal extends JFrame {
         topBar.add(backBtn, BorderLayout.EAST);
         page.add(topBar, BorderLayout.NORTH);
 
-        JPanel form = roundCard(DS.BG_CARD, DS.BORDER, DS.RADIUS_CARD);
-        form.setLayout(new GridBagLayout());
-        form.setBorder(new EmptyBorder(24, 32, 24, 32));
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(DS.BG_CARD);
+        form.setBorder(new CompoundBorder(
+            new LineBorder(DS.BORDER, 1),
+            new EmptyBorder(24, 32, 24, 32)));
 
         GridBagConstraints g = new GridBagConstraints();
         g.fill   = GridBagConstraints.HORIZONTAL;
@@ -509,7 +513,7 @@ public class CustomerPortal extends JFrame {
         upDays.actionPerformed(null);
 
         JPanel datePicker = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        datePicker.setOpaque(false);
+        datePicker.setBackground(DS.BG_CARD);
         addDateCombo(datePicker, yearBox,  "Year");
         addDateCombo(datePicker, monthBox, "Month");
         addDateCombo(datePicker, dayBox,   "Day");
@@ -536,11 +540,14 @@ public class CustomerPortal extends JFrame {
                                          (Integer) monthBox.getSelectedItem(),
                                          (Integer) dayBox.getSelectedItem());
             if (sel.isBefore(today)) { dlgWarn("Please select a future date."); return; }
+
             ServiceItem si = (ServiceItem) itemBox.getSelectedItem();
             String rem = remarkF.getText().trim().isEmpty() ? "N/A" : remarkF.getText().trim();
+
             boolean ok = appointmentDAO.submitAppointment(
                 customerID, si.getServiceItemID(), sel, (String) timeBox.getSelectedItem(),
                 brandF.getText().trim(), modelF.getText().trim(), plateF.getText().trim(), rem);
+
             if (ok) {
                 dlgInfo("Appointment booked for " + sel.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + ".");
                 brandF.setText(""); modelF.setText(""); plateF.setText(""); remarkF.setText("");
@@ -556,7 +563,7 @@ public class CustomerPortal extends JFrame {
         });
 
         JPanel submitRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        submitRow.setOpaque(false);
+        submitRow.setBackground(DS.BG_CARD);
         submitRow.add(submit);
         g.gridx = 0; g.gridy = r; g.gridwidth = 2; g.insets = new Insets(20, 12, 4, 12);
         form.add(submitRow, g);
@@ -608,6 +615,7 @@ public class CustomerPortal extends JFrame {
         table.setSelectionForeground(DS.FG_NAV_ACTIVE);
         table.setBackground(DS.BG_CARD);
         table.setForeground(DS.FG_LABEL);
+
         table.getTableHeader().setFont(DS.bold(12));
         table.getTableHeader().setBackground(DS.BG_HEADER);
         table.getTableHeader().setForeground(DS.FG_WHITE);
@@ -635,24 +643,9 @@ public class CustomerPortal extends JFrame {
             }
         });
 
-        // Wrap table in rounded container
-        JPanel tableWrapper = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(DS.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), DS.RADIUS_CARD * 2, DS.RADIUS_CARD * 2);
-                g2.setColor(DS.BORDER);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, DS.RADIUS_CARD * 2, DS.RADIUS_CARD * 2);
-                g2.dispose();
-            }
-        };
-        tableWrapper.setOpaque(false);
         JScrollPane tableScroll = new JScrollPane(table);
-        tableScroll.setBorder(null);
+        tableScroll.setBorder(new LineBorder(DS.BORDER));
         tableScroll.getViewport().setBackground(DS.BG_CARD);
-        tableWrapper.add(table.getTableHeader(), BorderLayout.NORTH);
-        tableWrapper.add(tableScroll, BorderLayout.CENTER);
 
         // Feedback section
         JPanel feedbackSection = new JPanel(new BorderLayout(0, 8));
@@ -660,6 +653,7 @@ public class CustomerPortal extends JFrame {
         feedbackSection.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         JLabel fbTitle = label("Feedback / Comments", DS.bold(14), DS.FG_LABEL);
+
         JLabel fbHint = label("Click a row above to select an appointment before submitting feedback.",
             DS.regular(11), DS.FG_SECONDARY);
 
@@ -682,7 +676,7 @@ public class CustomerPortal extends JFrame {
         fbArea.setLineWrap(true);
         fbArea.setWrapStyleWord(true);
         fbArea.setBorder(new CompoundBorder(
-            new LineBorder(DS.BORDER, 1, true),
+            new LineBorder(DS.BORDER),
             new EmptyBorder(8, 10, 8, 10)));
         fbArea.setEnabled(false);
         fbArea.setDisabledTextColor(DS.FG_SECONDARY);
@@ -697,9 +691,9 @@ public class CustomerPortal extends JFrame {
 
         JPanel inputPanel = new JPanel(new BorderLayout(0, 8));
         inputPanel.setBackground(DS.BG_PAGE);
-        inputPanel.add(ratingRow,              BorderLayout.NORTH);
-        inputPanel.add(new JScrollPane(fbArea), BorderLayout.CENTER);
-        inputPanel.add(submitRow,              BorderLayout.SOUTH);
+        inputPanel.add(ratingRow,               BorderLayout.NORTH);
+        inputPanel.add(new JScrollPane(fbArea),  BorderLayout.CENTER);
+        inputPanel.add(submitRow,               BorderLayout.SOUTH);
 
         feedbackSection.add(feedbackTopPanel, BorderLayout.NORTH);
         feedbackSection.add(inputPanel,       BorderLayout.CENTER);
@@ -711,7 +705,6 @@ public class CustomerPortal extends JFrame {
             int row = table.getSelectedRow();
             if (row < 0 || history == null || row >= history.size()) return;
             selID[0] = history.get(row).getAppointmentID();
-            String apptStatus = history.get(row).getStatus();
             Feedback ex = feedbackDAO.getFeedbackByAppointmentID(selID[0]);
             if (ex != null) {
                 fbArea.setEnabled(false); fbArea.setText(ex.getComment());
@@ -721,12 +714,6 @@ public class CustomerPortal extends JFrame {
                 submitFb.setEnabled(false);
                 fbHint.setText("You have already submitted feedback for this appointment.");
                 fbHint.setForeground(DS.FG_GREEN);
-            } else if (!"Completed".equalsIgnoreCase(apptStatus)) {
-                fbArea.setEnabled(false); fbArea.setText(""); fbArea.setForeground(DS.FG_SECONDARY);
-                ratingBox.setEnabled(false); ratingBox.setSelectedIndex(0);
-                submitFb.setEnabled(false);
-                fbHint.setText("Feedback is only available for completed appointments.");
-                fbHint.setForeground(DS.FG_SECONDARY);
             } else {
                 fbArea.setEnabled(true); fbArea.setText(""); fbArea.setForeground(DS.FG_LABEL);
                 ratingBox.setEnabled(true); ratingBox.setSelectedIndex(0);
@@ -749,7 +736,7 @@ public class CustomerPortal extends JFrame {
             } else { dlgErr("Failed to submit. Please try again."); }
         });
 
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableWrapper, feedbackSection);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableScroll, feedbackSection);
         split.setDividerLocation(300);
         split.setResizeWeight(0.55);
         split.setBorder(null);
@@ -794,7 +781,7 @@ public class CustomerPortal extends JFrame {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(pageBg);
-        content.setBorder(new EmptyBorder(30, 80, 40, 80));
+        content.setBorder(new EmptyBorder(30, 32, 40, 32));
 
         JLabel viewID    = new JLabel();
         JLabel viewName  = new JLabel();
@@ -846,9 +833,16 @@ public class CustomerPortal extends JFrame {
         load.run();
 
         CardLayout pCards  = new CardLayout();
-        JPanel     pSwitch = new JPanel(pCards);
+        JPanel     pSwitch = new JPanel(pCards) {
+            @Override public Dimension getPreferredSize() {
+                for (Component c : getComponents())
+                    if (c.isVisible()) return c.getPreferredSize();
+                return super.getPreferredSize();
+            }
+        };
         pSwitch.setOpaque(false);
         pSwitch.setAlignmentX(LEFT_ALIGNMENT);
+        pSwitch.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         // VIEW MODE
         JPanel view = new JPanel();
@@ -884,6 +878,7 @@ public class CustomerPortal extends JFrame {
         pDivider(infoCard, separatorClr);
         pInfoRow(infoCard, "Phone",        viewPhone, labelGrey, textDark);
         pDivider(infoCard, separatorClr);
+        pDivider(infoCard, separatorClr);
         pInfoRow(infoCard, "Member Since", viewDate,  labelGrey, textDark);
         view.add(infoCard);
         view.add(Box.createRigidArea(new Dimension(0, 28)));
@@ -897,9 +892,9 @@ public class CustomerPortal extends JFrame {
         JPanel actCard = appleCard(cardBg, separatorClr);
         pActionRow(actCard, "Edit Profile",    "Update your name, email and phone number", btnEdit,   textDark, labelGrey);
         pDivider(actCard, separatorClr);
-        pActionRow(actCard, "Change Password", "Update your account password",             btnChgPwd, textDark, labelGrey);
+        pActionRow(actCard, "Change Password", "Update your account password",                btnChgPwd, textDark, labelGrey);
         pDivider(actCard, separatorClr);
-        pActionRow(actCard, "Delete Account",  "Permanently remove your account and data", btnDel,    dangerRed, labelGrey);
+        pActionRow(actCard, "Delete Account",  "Permanently remove your account and data",    btnDel,    dangerRed, labelGrey);
         view.add(actCard);
         pSwitch.add(view, "VIEW");
 
@@ -935,6 +930,7 @@ public class CustomerPortal extends JFrame {
         pEditRow(editCard, "Email",   eEmail, labelGrey);
         pDivider(editCard, separatorClr);
         pEditRow(editCard, "Phone",   ePhone, labelGrey);
+        pDivider(editCard, separatorClr);
         edit.add(editCard);
         edit.add(Box.createRigidArea(new Dimension(0, 22)));
 
@@ -982,9 +978,10 @@ public class CustomerPortal extends JFrame {
             eEmail.setText(customer.getEmail());
             ePhone.setText(customer.getPhoneNumber());
             pCards.show(pSwitch, "EDIT");
+            pSwitch.revalidate(); pSwitch.repaint();
         });
 
-        btnCancel.addActionListener(e -> pCards.show(pSwitch, "VIEW"));
+        btnCancel.addActionListener(e -> { pCards.show(pSwitch, "VIEW"); pSwitch.revalidate(); pSwitch.repaint(); });
 
         btnSave.addActionListener(e -> {
             String nn = eName.getText().trim(), ne = eEmail.getText().trim();
@@ -997,7 +994,7 @@ public class CustomerPortal extends JFrame {
             customer.setName(nn); customer.setEmail(ne); customer.setPhoneNumber(np);
             if (customerDAO.updateCustomer(customer)) {
                 dlgInfo("Profile updated successfully.");
-                load.run(); avatarCircle.repaint(); pCards.show(pSwitch, "VIEW");
+                load.run(); avatarCircle.repaint(); pCards.show(pSwitch, "VIEW"); pSwitch.revalidate(); pSwitch.repaint();
             } else dlgErr("Failed to update profile.");
         });
 
@@ -1038,9 +1035,7 @@ public class CustomerPortal extends JFrame {
         return page;
     }
 
-    // =========================================================================
-    // PROFILE CARD PRIMITIVES
-    // =========================================================================
+    // Profile card primitives
     private JPanel appleCard(Color bg, Color border) {
         JPanel card = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
@@ -1141,21 +1136,11 @@ public class CustomerPortal extends JFrame {
     }
 
     private JTextField appleField() {
-        JTextField tf = new JTextField(20) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), DS.RADIUS_FIELD * 2, DS.RADIUS_FIELD * 2);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        JTextField tf = new JTextField(20);
         tf.setFont(DS.regular(13));
         tf.setForeground(DS.FG_LABEL);
-        tf.setOpaque(false);
         tf.setBorder(new CompoundBorder(
-            new RoundBorder(new Color(210, 210, 215), DS.RADIUS_FIELD),
+            new LineBorder(new Color(210, 210, 215), 1, true),
             new EmptyBorder(8, 12, 8, 12)));
         tf.setBackground(new Color(250, 250, 252));
         return tf;
@@ -1306,42 +1291,6 @@ public class CustomerPortal extends JFrame {
     // =========================================================================
     // UI FACTORY HELPERS
     // =========================================================================
-
-    /** Generic rounded-corner opaque panel with custom border paint. */
-    private JPanel roundCard(Color bg, Color border, int radius) {
-        JPanel p = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius * 2, radius * 2);
-                g2.setColor(border);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius * 2, radius * 2);
-                g2.dispose();
-            }
-        };
-        p.setOpaque(false);
-        return p;
-    }
-
-    /** Thin rounded-corner border used for input fields. */
-    private static class RoundBorder extends AbstractBorder {
-        private final Color color;
-        private final int   radius;
-        RoundBorder(Color color, int radius) { this.color = color; this.radius = radius; }
-        @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(color);
-            g2.drawRoundRect(x, y, w - 1, h - 1, radius * 2, radius * 2);
-            g2.dispose();
-        }
-        @Override public Insets getBorderInsets(Component c) { return new Insets(radius, radius, radius, radius); }
-        @Override public Insets getBorderInsets(Component c, Insets i) {
-            i.set(radius, radius, radius, radius); return i;
-        }
-    }
-
     private JScrollPane thinScroll(JComponent view) {
         JScrollPane sp = new JScrollPane(view);
         sp.setBorder(null);
@@ -1404,47 +1353,24 @@ public class CustomerPortal extends JFrame {
     }
 
     private JButton ghostBtn(String text) {
-        JButton btn = new JButton(text) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), DS.RADIUS_BTN * 2, DS.RADIUS_BTN * 2);
-                g2.setColor(DS.FG_NAV_ACTIVE);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, DS.RADIUS_BTN * 2, DS.RADIUS_BTN * 2);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        JButton btn = new JButton(text);
         btn.setFont(DS.regular(12));
         btn.setBackground(DS.BG_CARD);
         btn.setForeground(DS.FG_NAV_ACTIVE);
-        btn.setBorderPainted(false);
-        btn.setContentAreaFilled(false);
+        btn.setBorder(new LineBorder(DS.FG_NAV_ACTIVE, 1));
         btn.setFocusPainted(false);
-        btn.setOpaque(false);
+        btn.setOpaque(true);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
         return btn;
     }
 
     private JTextField formField(String tip) {
-        JTextField tf = new JTextField(20) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), DS.RADIUS_FIELD * 2, DS.RADIUS_FIELD * 2);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        JTextField tf = new JTextField(20);
         tf.setFont(DS.regular(13));
         tf.setForeground(DS.FG_LABEL);
-        tf.setOpaque(false);
         tf.setBackground(DS.BG_CARD);
         tf.setBorder(new CompoundBorder(
-            new RoundBorder(new Color(200, 200, 200), DS.RADIUS_FIELD),
+            new LineBorder(new Color(200, 200, 200), 1),
             new EmptyBorder(8, 10, 8, 10)));
         tf.setToolTipText(tip);
         return tf;

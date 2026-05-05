@@ -18,29 +18,19 @@ public class AppointmentDAO {
 
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
+            boolean firstLine = true;
 
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
+                if (firstLine) { firstLine = false; continue; } // skip header
 
-                String[] part = line.split("\\|");
+                String[] part = line.split("\\|", -1);
                 if (part.length == 15) {
                     Appointment a = new Appointment(
-                        part[0],
-                        part[1],
-                        part[2],
-                        part[3],
-                        part[4],
-                        part[5],
+                        part[0], part[1], part[2], part[3], part[4], part[5],
                         LocalDate.parse(part[6]),
-                        part[7],
-                        part[8],
-                        part[9],
-                        part[10],
-                        part[11],
-                        part[12],
-                        part[13],
-                        part[14]);
+                        part[7], part[8], part[9], part[10], part[11], part[12], part[13], part[14]);
                     appointments.add(a);
                 }
             }
@@ -51,38 +41,37 @@ public class AppointmentDAO {
         return appointments;
     }
 
-    // 修复：找最近的upcoming appointment（日期最小但不早于今天，且状态为 "Confirmed"）
+    // Upcoming: Confirmed atau Pending, tarikh hari ini atau masa depan
     public Appointment getUpcomingAppointmentByCustomerID(String customerID) {
         LocalDate today = LocalDate.now();
         Appointment upcoming = null;
 
         for (Appointment a : getAllAppointments()) {
-            if (a.getCustomerID().equals(customerID) 
-                    && !a.getAppointmentDate().isBefore(today)
-                    && "Confirmed".equals(a.getStatus())) {
-                if (upcoming == null || a.getAppointmentDate().isBefore(upcoming.getAppointmentDate())) {
-                    upcoming = a;
-                }
+            if (!a.getCustomerID().equals(customerID)) continue;
+            if (a.getAppointmentDate().isBefore(today)) continue;
+            String status = a.getStatus();
+            if (!"Confirmed".equalsIgnoreCase(status) && !"Pending".equalsIgnoreCase(status)) continue;
+
+            if (upcoming == null || a.getAppointmentDate().isBefore(upcoming.getAppointmentDate())) {
+                upcoming = a;
             }
         }
         return upcoming;
     }
 
+    // History: semua appointment customer (semua status)
     public List<Appointment> getPassAppointments(String customerID) {
-        LocalDate today = LocalDate.now();
         List<Appointment> list = new ArrayList<>();
-
         for (Appointment a : getAllAppointments()) {
-            if (a.getCustomerID().equals(customerID) 
-                    && a.getAppointmentDate().isBefore(today)
-                    && "Completed".equals(a.getStatus())) {
+            if (a.getCustomerID().equals(customerID)) {
                 list.add(a);
             }
         }
         return list;
     }
 
-    public boolean submitAppointment(String customerID, String serviceItemID, LocalDate date, String time, String vehicleBrand, String vehicleModel, String vehiclePlate, String command) {
+    public boolean submitAppointment(String customerID, String serviceItemID, LocalDate date,
+            String time, String vehicleBrand, String vehicleModel, String vehiclePlate, String command) {
 
         for (Appointment a : getAllAppointments()) {
             if (a.getCustomerID().equals(customerID)
@@ -99,21 +88,9 @@ public class AppointmentDAO {
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
             String line = String.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-                newID,
-                customerID,
-                "N/A",
-                "N/A",
-                "N/A",
-                serviceItemID,
-                date.toString(),
-                time,
-                "N/A",
-                "Pending",
-                vehicleBrand,
-                vehicleModel,
-                vehiclePlate,
-                command,
-                serviceType);
+                newID, customerID, "N/A", "N/A", "N/A", serviceItemID,
+                date.toString(), time, "N/A", "Pending",
+                vehicleBrand, vehicleModel, vehiclePlate, command, serviceType);
             bw.newLine();
             bw.write(line);
             return true;
@@ -130,16 +107,12 @@ public class AppointmentDAO {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
-
                 String[] parts = line.split("\\|", -1);
-                if (parts[0].startsWith("A")) {
+                if (parts[0].matches("A\\d+")) {
                     try {
                         int num = Integer.parseInt(parts[0].substring(1));
-                        if (num > max) {
-                            max = num;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
+                        if (num > max) max = num;
+                    } catch (NumberFormatException ignored) {}
                 }
             }
         } catch (IOException e) {

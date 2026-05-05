@@ -1,5 +1,6 @@
 customer_id|password|customer_name|customer_email|customer_phone|status|register_date
 C001|12345678|Sze Ying|szeying@gmail.com|0123456789|Approved|2024-01-01
-C002|123456|Jellyfish|isaclim@gmail.com|0143456789|Approved|2024-01-01
+C002|123456|Jellyfish|isaclim@gmail.com|0199887689|Approved|2024-01-01
 C003|12345678|AlanWalker|alan@gmail.com|0163456789|Approved|2026-05-01
 C004|12345678|Elwin|elwin@gmail.com|0188384456|Pending|2026-05-01
+C005|12345678|Thomas|thomas@gmail.com|0134456789|Pending|2026-05-01

@@ -37,7 +37,7 @@ public class CustomerDAO {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
-                if (firstLine) { firstLine = false; continue; } // skip header
+                if (firstLine) { firstLine = false; continue; }
                 Customer c = parseLine(line);
                 if (c != null) list.add(c);
             }

@@ -10,27 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FeedbackDAO {
+
     private static final String FILE_PATH = "src/txtFiles/feedback.txt";
 
     public Feedback getFeedbackByAppointmentID(String appointmentID) {
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
+            boolean firstLine = true;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
+                if (line.isEmpty()) continue;
+                if (firstLine) { firstLine = false; continue; } // skip header
+
                 String[] parts = line.split("\\|", -1);
                 if (parts.length >= 6 && parts[1].equals(appointmentID)) {
-                    return new Feedback(
-                        parts[0], 
-                        parts[1], 
-                        parts[2], 
-                        parts[3], 
-                        parts[4], 
-                        parts[5]);
+                    return new Feedback(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]);
                 }
-                    
             }
         } catch (IOException e) {
             System.out.println("Cannot read feedback.txt: " + e.getMessage());
@@ -42,20 +37,15 @@ public class FeedbackDAO {
         List<Feedback> feedbacks = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
+            boolean firstLine = true;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
+                if (line.isEmpty()) continue;
+                if (firstLine) { firstLine = false; continue; } // skip header
+
                 String[] parts = line.split("\\|", -1);
                 if (parts.length >= 6 && parts[2].equals(customerID)) {
-                    feedbacks.add(new Feedback(
-                        parts[0], 
-                        parts[1], 
-                        parts[2], 
-                        parts[3], 
-                        parts[4], 
-                        parts[5]));
+                    feedbacks.add(new Feedback(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]));
                 }
             }
         } catch (IOException e) {
@@ -66,12 +56,13 @@ public class FeedbackDAO {
 
     public boolean submitFeedback(String appointmentID, String customerID, String ratings, String comments) {
         if (getFeedbackByAppointmentID(appointmentID) != null) {
-            return false; // Feedback already exists for this appointment
+            return false;
         }
 
         String newID = generateNewID();
-        String date = LocalDate.now().toString();
-        String record   = newID + "|" + appointmentID + "|" + customerID + "|" + comments + "|" + ratings + "|" + date;
+        String date  = LocalDate.now().toString();
+        // format: feedback_id|appointment_id|customer_id|comment|rating|feedback_date
+        String record = newID + "|" + appointmentID + "|" + customerID + "|" + comments + "|" + ratings + "|" + date;
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
             bw.newLine();
@@ -80,7 +71,6 @@ public class FeedbackDAO {
         } catch (IOException e) {
             System.out.println("Cannot write to feedback.txt: " + e.getMessage());
             return false;
-
         }
     }
 
@@ -88,25 +78,18 @@ public class FeedbackDAO {
         int max = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
-            while((line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
+                if (line.isEmpty()) continue;
                 String[] parts = line.split("\\|", -1);
-                if (parts[0].startsWith("FB")) {
+                if (parts[0].matches("FB\\d+")) {
                     try {
                         int num = Integer.parseInt(parts[0].substring(2));
-                        if (num > max) {
-                            max = num;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
+                        if (num > max) max = num;
+                    } catch (NumberFormatException ignored) {}
                 }
             }
-        } catch (Exception e) {
-        }
+        } catch (Exception ignored) {}
         return String.format("FB%03d", max + 1);
     }
-
 }

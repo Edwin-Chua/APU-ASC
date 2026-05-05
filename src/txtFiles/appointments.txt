@@ -8,3 +8,4 @@ A008|C001|N/A|N/A|N/A|SI011|2026-04-06|09:00|N/A|Pending|xx|66|--|gd|Normal
 A009|C002|N/A|N/A|N/A|SI006|2026-04-04|14:00|N/A|Pending|Produa|Axia|KEE3143|N/A|Normal
 A010|C001|N/A|N/A|N/A|S001|2026-04-09|10:00|N/A|Pending|Toyota|Camry|ABC-123|Regular Maintenance|null
 A011|C002|N/A|N/A|N/A|SI005|2026-04-12|11:00|N/A|Confirmed|Honda|Civic|WLD8689|67|Normal
+A012|C002|N/A|N/A|N/A|SI002|2026-05-03|09:00|N/A|Confirmed|Honda|Civic|WLD8689|Testing|Special
