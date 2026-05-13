@@ -39,21 +39,22 @@ public class AppointmentDAO {
                 if (line.isEmpty()) continue;
                 if (first) { first = false; continue; } // skip header
                 String[] p = line.split("\\|", -1);
-                if (p.length < 13) continue;             // 13 columns after removing comment_id
+                if (p.length < 13) continue;
+
                 list.add(new Appointment(
-                    p[0].trim(),  // appointmentId
-                    p[1].trim(),  // customerId
-                    p[2].trim(),  // staffId
-                    p[3].trim(),  // serviceTypeId
-                    p[4].trim(),  // technicianId
-                    p[5].trim(),  // serviceItemId
-                    p[7].trim(),  // timeSlot
-                    p[6].trim(),  // appointmentDate
-                    p[8].trim(),  // status
-                    p[9].trim(),  // vehicleBrand
-                    p[10].trim(), // vehicleModel
-                    p[11].trim(), // vehiclePlate
-                    p[12].trim()  // technicianFeedback
+                    p[0].trim(),   // appointment_id
+                    p[1].trim(),   // customer_id
+                    p[2].trim(),   // staff_id
+                    p[3].trim(),   // service_type_id
+                    p[4].trim(),   // technician_id
+                    p[5].trim(),   // service_item_id
+                    p[6].trim(),   // time_slot / start_time
+                    p[7].trim(),   // appointment_date
+                    p[8].trim(),   // status
+                    p[9].trim(),   // vehicle_brand
+                    p[10].trim(),  // vehicle_model
+                    p[11].trim(),  // vehicle_plate
+                    p[12].trim()   // technician_feedback
                 ));
             }
         } catch (IOException e) {
@@ -74,11 +75,26 @@ public class AppointmentDAO {
     // ─── Get by ID ─────────────────────────────────────────────────────────────
     public Appointment getAppointmentById(String id) {
         for (Appointment a : getAllAppointments()) {
-            if (a.getAppointmentId().equals(id)) return a;
+            if (a.getAppointmentId().equals(id)) {
+                return a;
+            }
         }
         return null;
     }
+    
+    public List<Appointment> getAppointmentsByTechnicianId(String technicianId) {
+        List<Appointment> result = new ArrayList<>();
 
+        for (Appointment a : getAllAppointments()) {
+            if (a.getTechnicianId() != null &&
+                a.getTechnicianId().equalsIgnoreCase(technicianId)) {
+
+                result.add(a);
+            }
+        }
+
+        return result;
+    }
     // ─── Approve: status → Approved, assign technicianId + staffId ─────────────
     public boolean approveAppointment(String apptId, String techId, String staffId) {
         return updateFields(apptId, map -> {
@@ -210,5 +226,11 @@ public class AppointmentDAO {
     // ─── Null-safe helper ─────────────────────────────────────────────────────
     private String nvl(String s) {
         return (s == null || s.isEmpty()) ? "null" : s;
+    }
+    public boolean completeAppointmentWithFeedback(String apptId, String feedback) {
+        return updateFields(apptId, map -> {
+            map.put(8, "Completed");     // status
+            map.put(12, feedback);       // technician_feedback
+        });
     }
 }

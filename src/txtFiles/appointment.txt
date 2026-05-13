@@ -1,5 +1,5 @@
-appointment_id|customer_id|staff_id|service_type_id|technician_id|service_item_id|appointment_date|start_time|status|vehicle_brand|vehicle_model|vehicle_plate|technician_feedback
-A001|C002|CS001|TY001|T001|SI001|2026-04-26|10:00|Approved|Toyota|Camry|VKU 4821|N/A
+appointment_id|customer_id|staff_id|service_type_id|technician_id|service_item_id|start_time|appointment_date|status|vehicle_brand|vehicle_model|vehicle_plate|technician_feedback
+A001|C002|CS001|TY001|T001|SI001|2026-04-26|10:00|Completed|Toyota|Camry|VKU 4821|ezezez
 A002|C002|CS001|TY002|T002|SI002|2026-04-05|14:00|Approved|Toyota|Camry|VKU 4821|N/A
 A003|C002|CS002|TY001|T001|SI001|2026-02-10|09:00|Completed|Honda|Civic|WXY 1234|N/A
 A004|C002|CS002|TY002|T003|SI003|2026-01-15|13:00|Completed|Honda|Civic|WXY 1234|N/A
@@ -14,7 +14,11 @@ A013|C002|CS001|ST002|T002|SI004|2024-04-02|10:00|Completed|Honda|Civic|BCD5678|
 A014|C003|null|ST003|null|SI006|2024-04-03|11:00|Cancelled|Perodua|Myvi|JKL9012|N/A|N/A
 A015|C002|CS002|ST001|T004|SI002|2024-04-04|14:00|Pending|Proton|Saga|MNO3456|N/A|N/A
 A016|C001|CS001|ST004|T002|SI008|2024-04-05|15:00|Rejected|Nissan|Almera|PQR7890|N/A|N/A
-A017|C003|CS002|ST001|T001|SI003|2024-04-06|09:00|Approved|Mazda|CX-5|STU2345|N/A|N/A
+A017|C003|CS002|ST001|T001|SI003|2024-04-06|09:00|Completed|Mazda|CX-5|STU2345|ezez|N/A
 A018|C004|CS001|ST005|T002|SI010|2024-04-07|10:00|Completed|Toyota|Camry|VWX6789|Brake pads replaced
 A019|C001|CS002|ST002|T003|SI005|2024-04-08|13:00|Pending|Honda|Accord|YZA1234|N/A
 A020|C001|CS001|ST001|T001|SI001|09:00 AM|2026-05-03|Approved|Proton|MeowMeow|VVV 1111|N/A
+A021|C003|CS002|ST001|T001|SI003|2024-04-06|08:00|Completed|Mazda|CX-5|STU2345|N/A|N/A
+A022|C003|CS002|ST001|T001|SI003|2024-04-06|08:00|Pending|Nissan|Almera|VKP3231|N/A|N/A
+A023|C003|CS001|ST001|T001|SI001|09:00 AM|2026-05-12|Completed|myvi|x|ac1234|ez
+A024|C001|CS001|ST001|T001|SI001|08:00 AM|2026-05-12|Completed|aa|aa|qa|ez
