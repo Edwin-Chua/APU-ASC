@@ -287,7 +287,7 @@ public class CounterStaffCreateAppointment extends JPanel {
         techCard.setLayout(new BorderLayout(0, 0));
         techCard.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel techTitle = new JLabel("Technician Status");
+        JLabel techTitle = new JLabel("Current Status");
         techTitle.setFont(AppTheme.FONT_SMALL_BOLD);
         techTitle.setForeground(AppTheme.TEXT_PRIMARY);
 
