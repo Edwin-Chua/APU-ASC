@@ -232,4 +232,7 @@ public class AppointmentDAO {
             map.put(12, feedback);       // technician_feedback
         });
     }
+    public boolean markAppointmentAsPaid(String apptId) {
+        return updateFields(apptId, map -> map.put(8, "Paid"));
+    }
 }
