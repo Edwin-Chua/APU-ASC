@@ -5,6 +5,8 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public final class UIComponent {
 
@@ -265,6 +267,16 @@ public final class UIComponent {
     /** Rounded text field with placeholder-style appearance. */
     public static JTextField createTextField(String placeholder) {
         JTextField field = new JTextField() {
+        	@Override
+        	protected void paintComponent(Graphics g) {
+        	    Graphics2D g2 = (Graphics2D) g.create();
+        	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        	    g2.setColor(getBackground());
+        	    g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+        	            AppTheme.RADIUS_FIELD * 2, AppTheme.RADIUS_FIELD * 2);
+        	    g2.dispose();
+        	    super.paintComponent(g);
+        	}
             @Override
             protected void paintBorder(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -282,7 +294,7 @@ public final class UIComponent {
         field.setPreferredSize(AppTheme.FIELD_SIZE);
         field.setMaximumSize(AppTheme.FIELD_SIZE);
         field.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        field.setOpaque(true);
+        field.setOpaque(false);
         field.setToolTipText(placeholder);
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) { field.repaint(); }
@@ -294,6 +306,16 @@ public final class UIComponent {
     /** Rounded password field — same style as createTextField. */
     public static JPasswordField createPasswordField() {
         JPasswordField field = new JPasswordField() {
+        	@Override
+        	protected void paintComponent(Graphics g) {
+        	    Graphics2D g2 = (Graphics2D) g.create();
+        	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        	    g2.setColor(getBackground());
+        	    g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+        	            AppTheme.RADIUS_FIELD * 2, AppTheme.RADIUS_FIELD * 2);
+        	    g2.dispose();
+        	    super.paintComponent(g);
+        	}
             @Override
             protected void paintBorder(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -311,7 +333,7 @@ public final class UIComponent {
         field.setPreferredSize(AppTheme.FIELD_SIZE);
         field.setMaximumSize(AppTheme.FIELD_SIZE);
         field.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        field.setOpaque(true);
+        field.setOpaque(false);
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) { field.repaint(); }
             @Override public void focusLost(java.awt.event.FocusEvent e)   { field.repaint(); }
@@ -626,4 +648,483 @@ public final class UIComponent {
     
         return scroll;
     }
+    
+    // ─── Combo box ────────────────────────────────────────────────────────────
+    
+    /**
+     * Rounded combo box styled to match createTextField.
+     * Border is grey at rest and turns blue (AppTheme.PRIMARY) on focus.
+     * The popup list uses the same font and Apple-style selection highlight.
+     *
+     * Usage:
+     *   JComboBox<String> combo = UIComponent.createComboBox(
+     *       new String[]{"Option A", "Option B", "Option C"});
+     */
+    public static <T> JComboBox<T> createComboBox(T[] items) {
+        JComboBox<T> combo = new JComboBox<>(items) {
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                boolean focused = isFocusOwner()
+                        || (getEditor() != null && getEditor().getEditorComponent().isFocusOwner());
+                g2.setColor(focused ? AppTheme.BORDER_FOCUS : AppTheme.BORDER_DEFAULT);
+                g2.setStroke(new BasicStroke(focused ? 2f : 1.5f));
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3,
+                        AppTheme.RADIUS_FIELD * 2, AppTheme.RADIUS_FIELD * 2);
+                g2.dispose();
+            }
+ 
+            @Override
+            protected void paintComponent(Graphics g) {
+                // paint rounded background
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.BG_FIELD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        AppTheme.RADIUS_FIELD * 2, AppTheme.RADIUS_FIELD * 2);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+ 
+        combo.setFont(AppTheme.FONT_SMALL);
+        combo.setForeground(AppTheme.TEXT_PRIMARY);
+        combo.setBackground(AppTheme.BG_FIELD);
+        combo.setPreferredSize(AppTheme.FIELD_SIZE);
+        combo.setMaximumSize(AppTheme.FIELD_SIZE);
+        combo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        combo.setFocusable(true);
+        combo.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+ 
+        // ── Custom UI: hide the default button, draw our own chevron ──────────
+        combo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+ 
+            @Override
+            protected JButton createArrowButton() {
+                JButton arrow = new JButton() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        // draw a blue up/down chevron (↕) centred in the button
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(AppTheme.PRIMARY);
+                        g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+ 
+                        int cx = getWidth() / 2;
+                        int cy = getHeight() / 2;
+ 
+                        // up caret
+                        int[] upX = {cx - 4, cx, cx + 4};
+                        int[] upY = {cy - 1, cy - 4, cy - 1};
+                        g2.drawPolyline(upX, upY, 3);
+ 
+                        // down caret
+                        int[] dnX = {cx - 4, cx, cx + 4};
+                        int[] dnY = {cy + 1, cy + 4, cy + 1};
+                        g2.drawPolyline(dnX, dnY, 3);
+ 
+                        g2.dispose();
+                    }
+                };
+                arrow.setOpaque(false);
+                arrow.setContentAreaFilled(false);
+                arrow.setBorderPainted(false);
+                arrow.setFocusPainted(false);
+                arrow.setPreferredSize(new Dimension(32, AppTheme.FIELD_SIZE.height));
+                arrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                return arrow;
+            }
+ 
+            @Override
+            public void installUI(JComponent c) {
+                super.installUI(c);
+                // repaint border when focus moves in/out of the combo or its editor
+                comboBox.addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override public void focusGained(java.awt.event.FocusEvent e) { comboBox.repaint(); }
+                    @Override public void focusLost(java.awt.event.FocusEvent e)   { comboBox.repaint(); }
+                });
+            }
+        });
+ 
+        // ── Popup list styling ────────────────────────────────────────────────
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+ 
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+                lbl.setFont(AppTheme.FONT_SMALL);
+                lbl.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+ 
+                if (isSelected) {
+                    lbl.setBackground(AppTheme.STATUS_INPROGRESS_BG); // light blue
+                    lbl.setForeground(AppTheme.TEXT_PRIMARY);
+                } else {
+                    lbl.setBackground(AppTheme.BG_CARD);
+                    lbl.setForeground(AppTheme.TEXT_PRIMARY);
+                }
+                return lbl;
+            }
+        });
+ 
+        // Style the popup panel itself
+        Object popup = combo.getUI().getAccessibleChild(combo, 0);
+        if (popup instanceof javax.swing.plaf.basic.BasicComboPopup) {
+            javax.swing.plaf.basic.BasicComboPopup bp =
+                    (javax.swing.plaf.basic.BasicComboPopup) popup;
+            bp.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.BORDER_DEFAULT, 1),
+                    BorderFactory.createEmptyBorder(4, 0, 4, 0)
+            ));
+            bp.getList().setBackground(AppTheme.BG_CARD);
+            bp.getList().setSelectionBackground(AppTheme.STATUS_INPROGRESS_BG);
+            bp.getList().setSelectionForeground(AppTheme.TEXT_PRIMARY);
+        }
+ 
+        return combo;
+    }
+    
+    public static JTextArea createTextArea(String placeholder, int rows) {
+        JTextArea area = new JTextArea(placeholder, rows, 0) {
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                boolean focused = isFocusOwner();
+                g2.setColor(focused ? AppTheme.BORDER_FOCUS : AppTheme.BORDER_DEFAULT);
+                g2.setStroke(new BasicStroke(focused ? 2f : 1.5f));
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3,
+                        AppTheme.RADIUS_FIELD * 2, AppTheme.RADIUS_FIELD * 2);
+                g2.dispose();
+            }
+        };
+ 
+        area.setFont(AppTheme.FONT_SMALL);
+        area.setForeground(AppTheme.TEXT_MUTED);
+        area.setBackground(AppTheme.BG_FIELD);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setOpaque(true);
+        area.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+ 
+        area.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (area.getText().equals(placeholder)) {
+                    area.setText("");
+                    area.setForeground(AppTheme.TEXT_PRIMARY);
+                }
+                area.repaint();
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (area.getText().trim().isEmpty()) {
+                    area.setText(placeholder);
+                    area.setForeground(AppTheme.TEXT_MUTED);
+                }
+                area.repaint();
+            }
+        });
+ 
+        return area;
+    }
+
+    // ─── Date Picker ──────────────────────────────────────────────────────────
+
+    /**
+     * Creates a date picker field. Clicking opens a calendar popup.
+     *
+     * Usage:
+     *   DatePickerField picker = UIComponent.createDatePicker();
+     *   DatePickerField picker = UIComponent.createDatePicker(LocalDate.of(2026, 1, 1));
+     *
+     *   picker.getText()                          // "dd/MM/yyyy" string
+     *   picker.getDate()                          // LocalDate
+     *   picker.setDate(LocalDate.now())           // set programmatically
+     *   picker.addDateChangeListener(d -> ...)    // listen for changes
+     */
+    public static DatePickerField createDatePicker() {
+        return new DatePickerField(LocalDate.now());
+    }
+
+    public static DatePickerField createDatePicker(LocalDate initialDate) {
+        return new DatePickerField(initialDate);
+    }
+
+    // ─── DatePickerField ──────────────────────────────────────────────────────
+ 
+    public static class DatePickerField extends JPanel {
+ 
+        public interface DateChangeListener {
+            void onDateChanged(LocalDate date);
+        }
+ 
+        private static final DateTimeFormatter FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+ 
+        private LocalDate selectedDate;
+        private final JTextField textField;
+        private DateChangeListener changeListener;
+ 
+        public DatePickerField(LocalDate initialDate) {
+            this.selectedDate = initialDate;
+            setLayout(new BorderLayout(0, 0));
+            setOpaque(false);
+ 
+            // Plain text field — no icon, just click to open
+            textField = createTextField("Select date...");
+            textField.setText(selectedDate != null ? selectedDate.format(FMT) : "");
+            textField.setEditable(false);
+            textField.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            textField.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) { openPopup(); }
+            });
+ 
+            add(textField, BorderLayout.CENTER);
+        }
+ 
+        // ── Public API ────────────────────────────────────────────────────────
+ 
+        /** Returns the selected date as dd/MM/yyyy, or empty string if none */
+        public String getText() { return textField.getText(); }
+ 
+        /** Returns the selected date as a LocalDate, or null if none */
+        public LocalDate getDate() { return selectedDate; }
+ 
+        /** Sets the date and updates the field; pass null to clear */
+        public void setDate(LocalDate date) {
+            this.selectedDate = date;
+            textField.setText(date != null ? date.format(FMT) : "");
+            if (changeListener != null) changeListener.onDateChanged(date);
+        }
+ 
+        /** Sets the date from a dd/MM/yyyy string; ignores invalid input */
+        public void setText(String ddmmyyyy) {
+            try { setDate(LocalDate.parse(ddmmyyyy.trim(), FMT)); }
+            catch (Exception ignored) {}
+        }
+ 
+        /** Register a listener called whenever the user picks a date */
+        public void addDateChangeListener(DateChangeListener listener) {
+            this.changeListener = listener;
+        }
+ 
+        // ── Popup ─────────────────────────────────────────────────────────────
+ 
+        private void openPopup() {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            JDialog popup = new JDialog(owner, Dialog.ModalityType.MODELESS);
+            popup.setUndecorated(true);
+            popup.setBackground(new Color(0, 0, 0, 0));
+
+            // Remember date before opening so we can revert on outside-click dismiss
+            LocalDate dateBeforeOpen = selectedDate;
+            // Flag: true once user picks a date — prevents windowLostFocus from reverting
+            boolean[] datePicked = {false};
+
+            CalendarPanel cal = new CalendarPanel(
+                selectedDate != null ? selectedDate : LocalDate.now(), picked -> {
+                datePicked[0] = true;
+                setDate(picked);
+                popup.dispose();
+            });
+
+            // Revert only if the user dismissed without picking (clicked outside)
+            popup.addWindowFocusListener(new java.awt.event.WindowFocusListener() {
+                @Override public void windowGainedFocus(java.awt.event.WindowEvent e) {}
+                @Override public void windowLostFocus(java.awt.event.WindowEvent e) {
+                    if (!datePicked[0]) {
+                        selectedDate = dateBeforeOpen;
+                        textField.setText(dateBeforeOpen != null ? dateBeforeOpen.format(FMT) : "");
+                    }
+                    popup.dispose();
+                }
+            });
+
+            popup.setContentPane(cal);
+            popup.pack();
+ 
+            try {
+                Point loc = getLocationOnScreen();
+                popup.setLocation(loc.x, loc.y + getHeight() + 4);
+            } catch (Exception e) {
+                popup.setLocationRelativeTo(this);
+            }
+            popup.setVisible(true);
+        }
+    }
+
+    // ─── CalendarPanel ────────────────────────────────────────────────────────
+
+    private static class CalendarPanel extends JPanel {
+
+        interface Callback { void onSelected(LocalDate date); }
+
+        private LocalDate viewMonth;
+        private final LocalDate selectedDate;
+        private final Callback callback;
+        private JLabel monthLabel;
+        private JPanel daysGrid;
+
+        CalendarPanel(LocalDate initial, Callback callback) {
+            this.selectedDate = initial;
+            this.viewMonth    = initial.withDayOfMonth(1);
+            this.callback     = callback;
+
+            setLayout(new BorderLayout(0, 0));
+            setOpaque(false); // transparent so rounded bg shows
+
+            daysGrid = new JPanel(new GridLayout(0, 7, 6, 6));
+            daysGrid.setOpaque(false);
+
+            JPanel content = new JPanel(new BorderLayout(0, 8));
+            content.setOpaque(false);
+            content.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+            content.add(buildNav(),      BorderLayout.NORTH);
+            content.add(buildDayNames(), BorderLayout.CENTER);
+            content.add(daysGrid,        BorderLayout.SOUTH);
+
+            add(content, BorderLayout.CENTER);
+
+            refreshDays();
+        }
+
+        // Rounded white card with shadow-like border
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(AppTheme.BG_CARD);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+            g2.setColor(AppTheme.BORDER_DEFAULT);
+            g2.setStroke(new BasicStroke(1f));
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+            g2.dispose();
+        }
+
+        private JPanel buildNav() {
+            JPanel nav = new JPanel(new BorderLayout(0, 0));
+            nav.setOpaque(false);
+            nav.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+            JButton prev = navBtn("‹");
+            JButton next = navBtn("›");
+
+            monthLabel = new JLabel("", SwingConstants.CENTER);
+            monthLabel.setFont(AppTheme.FONT_SMALL_BOLD);
+            monthLabel.setForeground(AppTheme.TEXT_PRIMARY);
+
+            prev.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) { viewMonth = viewMonth.minusMonths(1); refreshDays(); }
+            });
+            next.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) { viewMonth = viewMonth.plusMonths(1); refreshDays(); }
+            });
+
+            nav.add(prev,       BorderLayout.WEST);
+            nav.add(monthLabel, BorderLayout.CENTER);
+            nav.add(next,       BorderLayout.EAST);
+            return nav;
+        }
+
+        private JPanel buildDayNames() {
+            JPanel p = new JPanel(new GridLayout(1, 7, 6, 0));
+            p.setOpaque(false);
+            p.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+            for (String d : new String[]{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}) {
+                JLabel lbl = new JLabel(d, SwingConstants.CENTER);
+                lbl.setFont(AppTheme.FONT_CAPTION);
+                lbl.setForeground(AppTheme.TEXT_SECONDARY);
+                p.add(lbl);
+            }
+            return p;
+        }
+
+        private void refreshDays() {
+            monthLabel.setText(viewMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+            daysGrid.removeAll();
+
+            int firstDow    = viewMonth.getDayOfWeek().getValue() % 7; // Sun=0
+            int daysInMonth = viewMonth.lengthOfMonth();
+
+            for (int i = 0; i < firstDow; i++) {
+                JLabel empty = new JLabel("");
+                empty.setPreferredSize(new Dimension(32, 32));
+                daysGrid.add(empty);
+            }
+
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate date     = viewMonth.withDayOfMonth(day);
+                boolean isSelected = date.equals(selectedDate);
+                boolean isToday    = date.equals(LocalDate.now());
+                final int d = day;
+
+                // Use JLabel for rendering — avoids JButton's internal clipping/truncation
+                JLabel btn = new JLabel(String.valueOf(d), SwingConstants.CENTER) {
+                    @Override protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_ON);
+                        if (isSelected) {
+                            g2.setColor(AppTheme.PRIMARY);
+                            g2.fillOval(0, 0, getWidth(), getHeight());
+                        } else if (isToday) {
+                            g2.setColor(AppTheme.PRIMARY);
+                            g2.setStroke(new BasicStroke(1.5f));
+                            g2.drawOval(1, 1, getWidth() - 3, getHeight() - 3);
+                        }
+                        g2.dispose();
+                        super.paintComponent(g);
+                    }
+                };
+
+                btn.setFont(AppTheme.FONT_SMALL);
+                btn.setForeground(isSelected ? AppTheme.TEXT_ON_PRIMARY
+                    : isToday    ? AppTheme.PRIMARY
+                    :              AppTheme.TEXT_PRIMARY);
+                btn.setOpaque(false);
+                btn.setPreferredSize(new Dimension(32, 32));
+                btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                // Hover effect
+                btn.addMouseListener(new MouseAdapter() {
+                    @Override public void mouseEntered(MouseEvent e) {
+                        if (!isSelected) btn.setForeground(AppTheme.PRIMARY);
+                    }
+                    @Override public void mouseExited(MouseEvent e) {
+                        btn.setForeground(isSelected ? AppTheme.TEXT_ON_PRIMARY
+                            : isToday ? AppTheme.PRIMARY : AppTheme.TEXT_PRIMARY);
+                    }
+                    @Override public void mouseClicked(MouseEvent e) {
+                        callback.onSelected(date);
+                    }
+                });
+
+                daysGrid.add(btn);
+            }
+
+            daysGrid.revalidate();
+            daysGrid.repaint();
+            revalidate();
+            repaint();
+        }
+
+        private JButton navBtn(String text) {
+            JButton btn = new JButton("<html>" + text + "</html>");
+            btn.setFont(AppTheme.FONT_BODY_BOLD);
+            btn.setForeground(AppTheme.PRIMARY);
+            btn.setBorderPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setFocusPainted(false);
+            btn.setOpaque(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.setPreferredSize(new Dimension(32, 28));
+            btn.setMargin(new Insets(0, 0, 0, 0));
+            return btn;
+        }
+    }
+
 }

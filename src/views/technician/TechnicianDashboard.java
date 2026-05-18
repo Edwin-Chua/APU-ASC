@@ -14,9 +14,9 @@ import views.shared.UIComponent;
 
 public class TechnicianDashboard extends BaseDashboard {
 
-    private static final String PAGE_PROFILE = "profile";
+    private static final String PAGE_PROFILE          = "profile";
     private static final String PAGE_VIEW_APPOINTMENT = "viewAppointment";
-    private static final String PAGE_SERVICE_TASK = "serviceTask";
+    private static final String PAGE_SERVICE_TASK     = "serviceTask";
 
     private JPanel contentPanel;
 
@@ -25,16 +25,19 @@ public class TechnicianDashboard extends BaseDashboard {
     private JButton btnServiceTask;
 
     private final TechnicianProfilePage profilePage;
-
+    private final TechnicianViewAppointmentPage viewAppointmentPage;
+    private final TechnicianServiceTaskPage serviceTaskPage;
+;
     public TechnicianDashboard(MainFrame frame) {
         super(frame);
 
-        profilePage = new TechnicianProfilePage(frame);
-
-        contentPanel.add(profilePage, PAGE_PROFILE);
-
-        // Later when you create these pages, uncomment/add them:
-        // contentPanel.add(new TechnicianViewAppointment(frame), PAGE_VIEW_APPOINTMENT);
+        profilePage         = new TechnicianProfilePage(frame);
+        viewAppointmentPage = new TechnicianViewAppointmentPage(frame);
+        serviceTaskPage = new TechnicianServiceTaskPage(frame);
+        contentPanel.add(profilePage,         PAGE_PROFILE);
+        contentPanel.add(viewAppointmentPage, PAGE_VIEW_APPOINTMENT);
+        contentPanel.add(serviceTaskPage, PAGE_SERVICE_TASK);
+        // Uncomment when ready:
         // contentPanel.add(new TechnicianServiceTask(frame), PAGE_SERVICE_TASK);
     }
 
@@ -44,15 +47,18 @@ public class TechnicianDashboard extends BaseDashboard {
         navPanel.setLayout(new BoxLayout(navPanel, BoxLayout.Y_AXIS));
         navPanel.setOpaque(false);
 
-        btnProfile = UIComponent.createNavButton("Profile");
-        btnViewAppointment = UIComponent.createNavButton("View Appointment");
-        btnServiceTask = UIComponent.createNavButton("Service Task");
+        btnProfile          = UIComponent.createNavButton("Profile");
+        btnViewAppointment  = UIComponent.createNavButton("View Appointment");
+        btnServiceTask      = UIComponent.createNavButton("Service Task");
 
-        btnProfile.addActionListener(e -> navigate(btnProfile, PAGE_PROFILE));
+        btnProfile.addActionListener(e ->
+            navigate(btnProfile, PAGE_PROFILE));
 
-        // Temporary: these still go profile until pages exist
-        btnViewAppointment.addActionListener(e -> navigate(btnProfile, PAGE_PROFILE));
-        btnServiceTask.addActionListener(e -> navigate(btnProfile, PAGE_PROFILE));
+        btnViewAppointment.addActionListener(e ->
+            navigate(btnViewAppointment, PAGE_VIEW_APPOINTMENT));
+
+        btnServiceTask.addActionListener(e ->
+        	navigate(btnServiceTask, PAGE_SERVICE_TASK)); // swap to PAGE_SERVICE_TASK when ready
 
         navPanel.add(btnProfile);
         navPanel.add(btnViewAppointment);
@@ -72,11 +78,11 @@ public class TechnicianDashboard extends BaseDashboard {
     public void refreshUser() {
         User user = frame.getLoggedInUser();
 
-        if (profilePage != null && user != null) {
+        if (user != null) {
             profilePage.loadUser(user);
+            viewAppointmentPage.loadUser(user);
+            serviceTaskPage.loadUser(user);
         }
-
-        navigate(btnProfile, PAGE_PROFILE);
     }
 
     private void navigate(JButton btn, String page) {

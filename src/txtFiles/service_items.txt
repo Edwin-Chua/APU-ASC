@@ -1,20 +1,11 @@
-SI001|P001|Normal|1.0|Basic oil change and filter replacement
-SI002|P002|Special|3.0|Full inspection, oil change, brake check, and fluid top-up
-SI003|P001|Normal|1.0|Tyre rotation and pressure check
-SI004|P002|Special|3.0|Engine diagnostic and full service
-SI005|P001|Normal|1.0|Air filter and cabin filter replacement
-SI006|P001|Normal|1.0|Windshield wiper blade replacement
-SI007|P002|Special|3.0|Transmission fluid flush and filter replacement
-SI008|P001|Normal|1.0|Battery check and terminal cleaning
-SI009|P002|Special|3.0|Full brake system overhaul and pad replacement
-SI010|P002|Special|3.0|Coolant flush and cooling system inspection
-SI011|P001|Normal|1.0|Spark plug inspection and replacement
-SI012|P001|Normal|1.0|Power steering fluid top-up and check
-SI013|P002|Special|3.0|Suspension and steering system inspection
-SI014|P001|Normal|1.0|Wheel alignment and balancing
-SI015|P002|Special|3.0|Air conditioning system service and regas
-SI016|P001|Normal|1.0|Exhaust system visual inspection
-SI017|P002|Special|3.0|Timing belt replacement and tensioner check
-SI018|P001|Normal|1.0|Headlight and tail light bulb replacement
-SI019|P002|Special|3.0|Fuel system cleaning and injector service
-SI020|P001|Normal|1.0|Exterior and underbody wash and inspection
+service_item_id|service_type_id|service_name|price|update_date|description
+SI001|ST001|Oil Change|50.00|2024-03-01|Standard engine oil replacement
+SI002|ST001|Tyre Rotation|30.00|2024-03-01|Rotate all four tyres
+SI003|ST001|Air Filter Replacement|25.00|2024-03-01|Replace cabin and engine air filter
+SI004|ST001|Brake Fluid Top Up|20.00|2024-03-01|Top up brake fluid to recommended level
+SI005|ST001|Wiper Blade Replacement|15.00|2024-03-01|Replace front and rear wiper blades
+SI006|ST002|Full Engine Overhaul|500.00|2024-03-05|Complete engine inspection and overhaul
+SI007|ST002|Transmission Service|350.00|2024-03-05|Full transmission flush and service
+SI008|ST002|Suspension Overhaul|280.00|2024-03-05|Full suspension system overhaul
+SI009|ST002|Exhaust System Replacement|320.00|2024-03-05|Replace exhaust pipes and muffler
+SI010|ST002|Brake Pad Replacement|120.00|2024-03-05|Replace front and rear brake pads
