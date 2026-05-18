@@ -18,15 +18,12 @@ public class TechnicianViewAppointmentPage extends JPanel {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private User currentUser;
 
-    // Filter state
     private String activeFilter = "All";
 
-    // UI references
     private JLabel lblTotal, lblApproved, lblCompleted;
     private JPanel appointmentListPanel;
     private JTextField searchField;
 
-    // Filter buttons for toggling active style
     private JButton btnAll, btnApproved, btnCompleted;
 
     public TechnicianViewAppointmentPage(MainFrame frame) {
@@ -36,7 +33,6 @@ public class TechnicianViewAppointmentPage extends JPanel {
         add(buildHeader(), BorderLayout.NORTH);
         add(buildScrollBody(), BorderLayout.CENTER);
 
-        // Auto-refresh whenever this page is shown (e.g. switching back from Service Task)
         addHierarchyListener(e -> {
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
                     && isShowing()) {
@@ -44,10 +40,6 @@ public class TechnicianViewAppointmentPage extends JPanel {
             }
         });
     }
-
-    // ─────────────────────────────────────────────
-    //  Header
-    // ─────────────────────────────────────────────
 
     private JPanel buildHeader() {
         JPanel header = new JPanel(new BorderLayout());
@@ -74,10 +66,6 @@ public class TechnicianViewAppointmentPage extends JPanel {
         return header;
     }
 
-    // ─────────────────────────────────────────────
-    //  Scrollable body
-    // ─────────────────────────────────────────────
-
     private JScrollPane buildScrollBody() {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -86,23 +74,20 @@ public class TechnicianViewAppointmentPage extends JPanel {
             AppTheme.PADDING_PAGE, 80, AppTheme.PADDING_PAGE, 80
         ));
 
-        // Subtitle
         JLabel subtitle = new JLabel("Appointments assigned to you by counter staff");
         subtitle.setFont(AppTheme.FONT_CAPTION);
         subtitle.setForeground(AppTheme.TEXT_MUTED);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         content.add(subtitle);
         content.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
-        // Stats row
         content.add(buildStatsRow());
         content.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
-        // Filter + search bar
         content.add(buildFilterBar());
         content.add(UIComponent.verticalGap(AppTheme.GAP_ITEM));
 
-        // Appointment list (refreshable)
         appointmentListPanel = new JPanel();
         appointmentListPanel.setLayout(new BoxLayout(appointmentListPanel, BoxLayout.Y_AXIS));
         appointmentListPanel.setOpaque(false);
@@ -112,23 +97,19 @@ public class TechnicianViewAppointmentPage extends JPanel {
         return UIComponent.createAppleScrollPane(content);
     }
 
-    // ─────────────────────────────────────────────
-    //  Stats row: 4 metric cards
-    // ─────────────────────────────────────────────
-
     private JPanel buildStatsRow() {
-    	JPanel row = new JPanel(new GridLayout(1, 3, 12, 0));
-    	row.setOpaque(false);
+        JPanel row = new JPanel(new GridLayout(1, 3, 12, 0));
+        row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        lblTotal    = new JLabel("0");
+        lblTotal = new JLabel("0");
         lblApproved = new JLabel("0");
         lblCompleted = new JLabel("0");
 
-        row.add(buildStatCard("Total Assigned",  lblTotal,    AppTheme.TEXT_PRIMARY));
-        row.add(buildStatCard("Approved",        lblApproved, new Color(0x1D9E75)));
-        row.add(buildStatCard("Completed",       lblCompleted, new Color(0x185FA5)));
+        row.add(buildStatCard("Total Assigned", lblTotal, AppTheme.TEXT_PRIMARY));
+        row.add(buildStatCard("Approved", lblApproved, new Color(0x1D9E75)));
+        row.add(buildStatCard("Completed", lblCompleted, new Color(0x185FA5)));
 
         return row;
     }
@@ -153,33 +134,29 @@ public class TechnicianViewAppointmentPage extends JPanel {
         return card;
     }
 
-    // ─────────────────────────────────────────────
-    //  Filter bar
-    // ─────────────────────────────────────────────
-
     private JPanel buildFilterBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         bar.setOpaque(false);
         bar.setAlignmentX(Component.LEFT_ALIGNMENT);
         bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        btnAll       = buildFilterButton("All");
-        btnApproved  = buildFilterButton("Approved");
+        btnAll = buildFilterButton("All");
+        btnApproved = buildFilterButton("Approved");
         btnCompleted = buildFilterButton("Completed");
 
         setFilterActive(btnAll);
 
-        btnAll.addActionListener(e       -> applyFilter("All",      btnAll));
-        btnApproved.addActionListener(e  -> applyFilter("Approved",  btnApproved));
-        btnCompleted.addActionListener(e -> applyFilter("Completed",  btnCompleted));
+        btnAll.addActionListener(e -> applyFilter("All", btnAll));
+        btnApproved.addActionListener(e -> applyFilter("Approved", btnApproved));
+        btnCompleted.addActionListener(e -> applyFilter("Completed", btnCompleted));
 
         bar.add(btnAll);
         bar.add(btnApproved);
         bar.add(btnCompleted);
 
-        // Search field pushed to right
         JPanel searchWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         searchWrap.setOpaque(false);
+
         searchField = UIComponent.createTextField("Search by ID or customer...");
         searchField.setPreferredSize(new Dimension(200, 30));
         searchField.addActionListener(e -> refreshList());
@@ -217,6 +194,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
             b.setForeground(AppTheme.TEXT_MUTED);
             b.setFont(AppTheme.FONT_SMALL);
         }
+
         btn.setBackground(AppTheme.BG_CARD);
         btn.setForeground(AppTheme.TEXT_PRIMARY);
         btn.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD));
@@ -227,10 +205,6 @@ public class TechnicianViewAppointmentPage extends JPanel {
         setFilterActive(btn);
         refreshList();
     }
-
-    // ─────────────────────────────────────────────
-    //  Appointment list
-    // ─────────────────────────────────────────────
 
     private void refreshList() {
         appointmentListPanel.removeAll();
@@ -277,12 +251,13 @@ public class TechnicianViewAppointmentPage extends JPanel {
 
             boolean matchSearch = query.isEmpty()
                     || appt.getAppointmentId().toLowerCase().contains(query)
-                    || (appt.getCustomerId() != null && appt.getCustomerId().toLowerCase().contains(query));
+                    || (appt.getCustomerId() != null
+                    && appt.getCustomerId().toLowerCase().contains(query));
 
             if (!matchFilter || !matchSearch) continue;
 
             appointmentListPanel.add(buildAppointmentCard(appt));
-            appointmentListPanel.add(UIComponent.verticalGap(10));
+            appointmentListPanel.add(UIComponent.verticalGap(8));
         }
 
         if (appointmentListPanel.getComponentCount() == 0) {
@@ -299,15 +274,11 @@ public class TechnicianViewAppointmentPage extends JPanel {
         appointmentListPanel.repaint();
     }
 
-    // ─────────────────────────────────────────────
-    //  Single appointment card
-    // ─────────────────────────────────────────────
-
     private JPanel buildAppointmentCard(Appointment appt) {
         JPanel card = UIComponent.createCard();
-        card.setLayout(new BorderLayout(0, 10));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
-        // ── Top row: ID + date on left, status badge on right ──
+        card.setLayout(new BorderLayout(0, 8));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+
         JPanel topRow = new JPanel(new BorderLayout());
         topRow.setOpaque(false);
 
@@ -319,8 +290,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
         idLabel.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD));
         idLabel.setForeground(AppTheme.TEXT_PRIMARY);
 
-        String dateTime = appt.getAppointmentDate() + "  ·  " + appt.getTimeSlot();
-        JLabel dateLabel = new JLabel(dateTime);
+        JLabel dateLabel = new JLabel(appt.getAppointmentDate() + "  ·  " + appt.getTimeSlot());
         dateLabel.setFont(AppTheme.FONT_CAPTION);
         dateLabel.setForeground(AppTheme.TEXT_MUTED);
 
@@ -328,26 +298,30 @@ public class TechnicianViewAppointmentPage extends JPanel {
         idDateCol.add(UIComponent.verticalGap(2));
         idDateCol.add(dateLabel);
 
-        JLabel statusBadge = buildStatusBadge(appt.getStatus());
-
         topRow.add(idDateCol, BorderLayout.WEST);
-        topRow.add(statusBadge, BorderLayout.EAST);
+        topRow.add(buildStatusBadge(appt.getStatus()), BorderLayout.EAST);
         card.add(topRow, BorderLayout.NORTH);
 
-        // ── Info grid: vehicle / plate / service type / service item / time slot ──
-        JPanel infoGrid = new JPanel(new GridLayout(2, 3, 12, 6));
+        JPanel infoGrid = new JPanel(new GridLayout(1, 5, 12, 6));
         infoGrid.setOpaque(false);
 
-        infoGrid.add(buildInfoCell("Vehicle",      appt.getVehicleBrand() + " " + appt.getVehicleModel()));
-        infoGrid.add(buildInfoCell("Plate no.",    appt.getVehiclePlate()));
-        infoGrid.add(buildInfoCell("Service type", appt.getServiceTypeId()));
-        infoGrid.add(buildInfoCell("Service item", appt.getServiceItemId()));
-        infoGrid.add(buildInfoCell("Time slot",    appt.getTimeSlot()));
-        infoGrid.add(new JLabel()); // spacer
+        infoGrid.add(buildInfoCell("Vehicle",
+                appt.getVehicleBrand() + " " + appt.getVehicleModel()));
+
+        infoGrid.add(buildInfoCell("Plate no.",
+                appt.getVehiclePlate()));
+
+        infoGrid.add(buildInfoCell("Service type",
+                getServiceTypeName(appt.getServiceTypeId())));
+
+        infoGrid.add(buildInfoCell("Service item",
+                getServiceItemName(appt.getServiceItemId())));
+
+        infoGrid.add(buildInfoCell("Time slot",
+                appt.getTimeSlot()));
 
         card.add(infoGrid, BorderLayout.CENTER);
 
-        // ── Footer: customer ID left, View Details button right ──
         JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createCompoundBorder(
@@ -395,22 +369,25 @@ public class TechnicianViewAppointmentPage extends JPanel {
         badge.setBorder(new EmptyBorder(3, 10, 3, 10));
 
         if (status == null) status = "";
+
         switch (status.toLowerCase()) {
-            case "approved" -> { badge.setBackground(new Color(0xE1F5EE)); badge.setForeground(new Color(0x0F6E56)); }
+            case "approved" -> {
+                badge.setBackground(new Color(0xE1F5EE));
+                badge.setForeground(new Color(0x0F6E56));
+            }
             case "completed" -> {
                 badge.setBackground(new Color(0xE6F1FB));
                 badge.setForeground(new Color(0x0C447C));
-            }            default         -> { badge.setBackground(AppTheme.BG_CARD);   badge.setForeground(AppTheme.TEXT_MUTED); }
+            }
+            default -> {
+                badge.setBackground(AppTheme.BG_CARD);
+                badge.setForeground(AppTheme.TEXT_MUTED);
+            }
         }
 
-        // Rounded corners via custom component
         badge.putClientProperty("html.disable", Boolean.FALSE);
         return badge;
     }
-
-    // ─────────────────────────────────────────────
-    //  Detail dialog
-    // ─────────────────────────────────────────────
 
     private void showAppointmentDetail(Appointment appt) {
         JDialog dialog = new JDialog(
@@ -418,7 +395,8 @@ public class TechnicianViewAppointmentPage extends JPanel {
             "Appointment Details — " + appt.getAppointmentId(),
             true
         );
-        dialog.setSize(480, 520);
+
+        dialog.setSize(500, 540);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(AppTheme.BG_CONTENT);
 
@@ -430,41 +408,49 @@ public class TechnicianViewAppointmentPage extends JPanel {
         body.add(UIComponent.createSectionLabel("APPOINTMENT INFORMATION"));
 
         JPanel infoCard = UIComponent.createCard();
-        infoCard.add(UIComponent.createInfoRow("Appointment ID",  labelFor(appt.getAppointmentId())));
+        infoCard.add(UIComponent.createInfoRow("Appointment ID", labelFor(appt.getAppointmentId())));
         infoCard.add(UIComponent.createRowDivider());
-        infoCard.add(UIComponent.createInfoRow("Date",            labelFor(appt.getAppointmentDate())));
+        infoCard.add(UIComponent.createInfoRow("Date", labelFor(appt.getAppointmentDate())));
         infoCard.add(UIComponent.createRowDivider());
-        infoCard.add(UIComponent.createInfoRow("Time Slot",       labelFor(appt.getTimeSlot())));
+        infoCard.add(UIComponent.createInfoRow("Time Slot", labelFor(appt.getTimeSlot())));
         infoCard.add(UIComponent.createRowDivider());
-        infoCard.add(UIComponent.createInfoRow("Status",          buildStatusBadge(appt.getStatus())));
+        infoCard.add(UIComponent.createInfoRow("Status", buildStatusBadge(appt.getStatus())));
         body.add(infoCard);
-        body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
+        body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
         body.add(UIComponent.createSectionLabel("VEHICLE & SERVICE"));
 
         JPanel vehicleCard = UIComponent.createCard();
-        vehicleCard.add(UIComponent.createInfoRow("Brand",        labelFor(appt.getVehicleBrand())));
+        vehicleCard.add(UIComponent.createInfoRow("Brand", labelFor(appt.getVehicleBrand())));
         vehicleCard.add(UIComponent.createRowDivider());
-        vehicleCard.add(UIComponent.createInfoRow("Model",        labelFor(appt.getVehicleModel())));
+        vehicleCard.add(UIComponent.createInfoRow("Model", labelFor(appt.getVehicleModel())));
         vehicleCard.add(UIComponent.createRowDivider());
-        vehicleCard.add(UIComponent.createInfoRow("Plate",        labelFor(appt.getVehiclePlate())));
+        vehicleCard.add(UIComponent.createInfoRow("Plate", labelFor(appt.getVehiclePlate())));
         vehicleCard.add(UIComponent.createRowDivider());
-        vehicleCard.add(UIComponent.createInfoRow("Service Type", labelFor(appt.getServiceTypeId())));
+        vehicleCard.add(UIComponent.createInfoRow("Service Type",
+                labelFor(getServiceTypeName(appt.getServiceTypeId()))));
         vehicleCard.add(UIComponent.createRowDivider());
-        vehicleCard.add(UIComponent.createInfoRow("Service Item", labelFor(appt.getServiceItemId())));
+        vehicleCard.add(UIComponent.createInfoRow("Service Item",
+                labelFor(getServiceItemName(appt.getServiceItemId()))));
         body.add(vehicleCard);
-        body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
-        if (appt.getTechnicianFeedback() != null && !appt.getTechnicianFeedback().isBlank()) {
-            body.add(UIComponent.createSectionLabel("TECHNICIAN FEEDBACK"));
-            JPanel fbCard = UIComponent.createCard();
-            JLabel fbLabel = new JLabel("<html>" + appt.getTechnicianFeedback() + "</html>");
-            fbLabel.setFont(AppTheme.FONT_SMALL);
-            fbLabel.setForeground(AppTheme.TEXT_PRIMARY);
-            fbCard.add(fbLabel);
-            body.add(fbCard);
+        if (appt.getTechnicianFeedback() != null
+                && !appt.getTechnicianFeedback().isBlank()
+                && !"N/A".equalsIgnoreCase(appt.getTechnicianFeedback())) {
+
             body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
+            body.add(UIComponent.createSectionLabel("TECHNICIAN FEEDBACK"));
+
+            JPanel remarkCard = UIComponent.createCard();
+            JLabel remarkLabel = new JLabel("<html>" + appt.getTechnicianFeedback() + "</html>");
+            remarkLabel.setFont(AppTheme.FONT_SMALL);
+            remarkLabel.setForeground(AppTheme.TEXT_PRIMARY);
+            remarkCard.add(remarkLabel);
+
+            body.add(remarkCard);
         }
+
+        body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
         JButton btnClose = UIComponent.createPrimaryButton("Close");
         btnClose.setPreferredSize(new Dimension(120, 40));
@@ -477,16 +463,36 @@ public class TechnicianViewAppointmentPage extends JPanel {
         dialog.setVisible(true);
     }
 
+    private String getServiceItemName(String serviceItemId) {
+        switch (serviceItemId) {
+            case "SI001": return "Oil Change";
+            case "SI002": return "Tyre Rotation";
+            case "SI003": return "Air Filter Replacement";
+            case "SI004": return "Brake Fluid Top Up";
+            case "SI005": return "Wiper Blade Replacement";
+            case "SI006": return "Full Engine Overhaul";
+            case "SI007": return "Transmission Service";
+            case "SI008": return "Suspension Overhaul";
+            case "SI009": return "Exhaust System Replacement";
+            case "SI010": return "Brake Pad Replacement";
+            default: return serviceItemId;
+        }
+    }
+
+    private String getServiceTypeName(String serviceTypeId) {
+        switch (serviceTypeId) {
+            case "ST001": return "Normal Service";
+            case "ST002": return "Major Service";
+            default: return serviceTypeId;
+        }
+    }
+
     private JLabel labelFor(String text) {
         JLabel lbl = new JLabel(text != null && !text.isBlank() ? text : "—");
         lbl.setFont(AppTheme.FONT_SMALL);
         lbl.setForeground(AppTheme.TEXT_PRIMARY);
         return lbl;
     }
-
-    // ─────────────────────────────────────────────
-    //  Load user (called by dashboard on refresh)
-    // ─────────────────────────────────────────────
 
     public void loadUser(User user) {
         this.currentUser = user;
