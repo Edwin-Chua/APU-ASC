@@ -22,12 +22,12 @@ public class TechnicianViewAppointmentPage extends JPanel {
     private String activeFilter = "All";
 
     // UI references
-    private JLabel lblTotal, lblPending, lblApproved, lblCompleted;
+    private JLabel lblTotal, lblApproved, lblCompleted;
     private JPanel appointmentListPanel;
     private JTextField searchField;
 
     // Filter buttons for toggling active style
-    private JButton btnAll, btnPending, btnApproved, btnRejected, btnCompleted;
+    private JButton btnAll, btnApproved, btnCompleted;
 
     public TechnicianViewAppointmentPage(MainFrame frame) {
         this.frame = frame;
@@ -117,18 +117,16 @@ public class TechnicianViewAppointmentPage extends JPanel {
     // ─────────────────────────────────────────────
 
     private JPanel buildStatsRow() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 12, 0));
-        row.setOpaque(false);
+    	JPanel row = new JPanel(new GridLayout(1, 3, 12, 0));
+    	row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
         lblTotal    = new JLabel("0");
-        lblPending  = new JLabel("0");
         lblApproved = new JLabel("0");
         lblCompleted = new JLabel("0");
 
         row.add(buildStatCard("Total Assigned",  lblTotal,    AppTheme.TEXT_PRIMARY));
-        row.add(buildStatCard("Pending",         lblPending,  new Color(0xBA7517)));
         row.add(buildStatCard("Approved",        lblApproved, new Color(0x1D9E75)));
         row.add(buildStatCard("Completed",       lblCompleted, new Color(0x185FA5)));
 
@@ -166,23 +164,17 @@ public class TechnicianViewAppointmentPage extends JPanel {
         bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         btnAll       = buildFilterButton("All");
-        btnPending   = buildFilterButton("Pending");
         btnApproved  = buildFilterButton("Approved");
-        btnRejected  = buildFilterButton("Rejected");
         btnCompleted = buildFilterButton("Completed");
 
         setFilterActive(btnAll);
 
         btnAll.addActionListener(e       -> applyFilter("All",      btnAll));
-        btnPending.addActionListener(e   -> applyFilter("Pending",   btnPending));
         btnApproved.addActionListener(e  -> applyFilter("Approved",  btnApproved));
-        btnRejected.addActionListener(e  -> applyFilter("Rejected",  btnRejected));
         btnCompleted.addActionListener(e -> applyFilter("Completed",  btnCompleted));
 
         bar.add(btnAll);
-        bar.add(btnPending);
         bar.add(btnApproved);
-        bar.add(btnRejected);
         bar.add(btnCompleted);
 
         // Search field pushed to right
@@ -219,7 +211,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
     }
 
     private void setFilterActive(JButton btn) {
-        for (JButton b : new JButton[]{btnAll, btnPending, btnApproved, btnRejected, btnCompleted}) {
+        for (JButton b : new JButton[]{btnAll, btnApproved, btnCompleted}) {
             if (b == null) continue;
             b.setBackground(AppTheme.BG_CONTENT);
             b.setForeground(AppTheme.TEXT_MUTED);
@@ -252,41 +244,53 @@ public class TechnicianViewAppointmentPage extends JPanel {
         String query = searchField != null ? searchField.getText().trim().toLowerCase() : "";
         List<Appointment> appointments = appointmentDAO.getAppointmentsByTechnicianId(currentUser.getUserId());
 
-        int total = 0, pending = 0, approved = 0, completed = 0;
+        int total = 0, approved = 0, completed = 0;
 
         for (Appointment appt : appointments) {
-            total++;
             String status = appt.getStatus();
-            if ("Pending".equalsIgnoreCase(status))  pending++;
+
+            if (!"Approved".equalsIgnoreCase(status)
+                    && !"Completed".equalsIgnoreCase(status)) {
+                continue;
+            }
+
+            total++;
+
             if ("Approved".equalsIgnoreCase(status)) approved++;
             if ("Completed".equalsIgnoreCase(status)) completed++;
         }
 
         lblTotal.setText(String.valueOf(total));
-        lblPending.setText(String.valueOf(pending));
         lblApproved.setText(String.valueOf(approved));
         lblCompleted.setText(String.valueOf(completed));
 
-        boolean any = false;
         for (Appointment appt : appointments) {
+            String status = appt.getStatus();
+
+            if (!"Approved".equalsIgnoreCase(status)
+                    && !"Completed".equalsIgnoreCase(status)) {
+                continue;
+            }
+
             boolean matchFilter = activeFilter.equals("All")
-                || activeFilter.equalsIgnoreCase(appt.getStatus());
+                    || activeFilter.equalsIgnoreCase(status);
+
             boolean matchSearch = query.isEmpty()
-                || appt.getAppointmentId().toLowerCase().contains(query)
-                || (appt.getCustomerId() != null && appt.getCustomerId().toLowerCase().contains(query));
+                    || appt.getAppointmentId().toLowerCase().contains(query)
+                    || (appt.getCustomerId() != null && appt.getCustomerId().toLowerCase().contains(query));
 
             if (!matchFilter || !matchSearch) continue;
 
             appointmentListPanel.add(buildAppointmentCard(appt));
             appointmentListPanel.add(UIComponent.verticalGap(10));
-            any = true;
         }
 
-        if (!any) {
+        if (appointmentListPanel.getComponentCount() == 0) {
             JLabel empty = new JLabel("No appointments found.");
             empty.setFont(AppTheme.FONT_CAPTION);
             empty.setForeground(AppTheme.TEXT_MUTED);
             empty.setAlignmentX(Component.LEFT_ALIGNMENT);
+
             appointmentListPanel.add(UIComponent.verticalGap(24));
             appointmentListPanel.add(empty);
         }
@@ -302,7 +306,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
     private JPanel buildAppointmentCard(Appointment appt) {
         JPanel card = UIComponent.createCard();
         card.setLayout(new BorderLayout(0, 10));
-
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
         // ── Top row: ID + date on left, status badge on right ──
         JPanel topRow = new JPanel(new BorderLayout());
         topRow.setOpaque(false);
@@ -348,7 +352,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.BORDER_CARD),
-            new EmptyBorder(10, 0, 0, 0)
+            new EmptyBorder(6, 0, 0, 0)
         ));
 
         JLabel customerLabel = new JLabel("Customer: " + appt.getCustomerId());
@@ -392,9 +396,7 @@ public class TechnicianViewAppointmentPage extends JPanel {
 
         if (status == null) status = "";
         switch (status.toLowerCase()) {
-            case "pending"  -> { badge.setBackground(new Color(0xFAEEDA)); badge.setForeground(new Color(0x854F0B)); }
             case "approved" -> { badge.setBackground(new Color(0xE1F5EE)); badge.setForeground(new Color(0x0F6E56)); }
-            case "rejected" -> { badge.setBackground(new Color(0xFCEBEB)); badge.setForeground(new Color(0xA32D2D)); }
             case "completed" -> {
                 badge.setBackground(new Color(0xE6F1FB));
                 badge.setForeground(new Color(0x0C447C));
