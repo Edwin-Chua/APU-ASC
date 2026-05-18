@@ -704,22 +704,34 @@ public class CustomerPortal extends JFrame {
             if (e.getValueIsAdjusting()) return;
             int row = table.getSelectedRow();
             if (row < 0 || history == null || row >= history.size()) return;
-            selID[0] = history.get(row).getAppointmentID();
-            Feedback ex = feedbackDAO.getFeedbackByAppointmentID(selID[0]);
-            if (ex != null) {
-                fbArea.setEnabled(false); fbArea.setText(ex.getComment());
-                ratingBox.setEnabled(false);
-                try { ratingBox.setSelectedIndex(Integer.parseInt(ex.getRating())); }
-                catch (NumberFormatException ignored) { ratingBox.setSelectedIndex(0); }
+            Appointment selAppt = history.get(row);
+            selID[0] = selAppt.getAppointmentID();
+            String selStatus = selAppt.getStatus();
+
+            if (!"Completed".equalsIgnoreCase(selStatus)) {
+                // Only completed appointments can be rated
+                fbArea.setEnabled(false); fbArea.setText("");
+                ratingBox.setEnabled(false); ratingBox.setSelectedIndex(0);
                 submitFb.setEnabled(false);
-                fbHint.setText("You have already submitted feedback for this appointment.");
-                fbHint.setForeground(DS.FG_GREEN);
+                fbHint.setText("Only completed appointments can be rated.");
+                fbHint.setForeground(DS.FG_ORANGE);
             } else {
-                fbArea.setEnabled(true); fbArea.setText(""); fbArea.setForeground(DS.FG_LABEL);
-                ratingBox.setEnabled(true); ratingBox.setSelectedIndex(0);
-                submitFb.setEnabled(true);
-                fbHint.setText("Write your feedback below and click Submit.");
-                fbHint.setForeground(DS.FG_SECONDARY);
+                Feedback ex = feedbackDAO.getFeedbackByAppointmentID(selID[0]);
+                if (ex != null) {
+                    fbArea.setEnabled(false); fbArea.setText(ex.getComment());
+                    ratingBox.setEnabled(false);
+                    try { ratingBox.setSelectedIndex(Integer.parseInt(ex.getRating())); }
+                    catch (NumberFormatException ignored) { ratingBox.setSelectedIndex(0); }
+                    submitFb.setEnabled(false);
+                    fbHint.setText("You have already submitted feedback for this appointment.");
+                    fbHint.setForeground(DS.FG_GREEN);
+                } else {
+                    fbArea.setEnabled(true); fbArea.setText(""); fbArea.setForeground(DS.FG_LABEL);
+                    ratingBox.setEnabled(true); ratingBox.setSelectedIndex(0);
+                    submitFb.setEnabled(true);
+                    fbHint.setText("Write your feedback below and click Submit.");
+                    fbHint.setForeground(DS.FG_SECONDARY);
+                }
             }
         });
 

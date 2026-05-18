@@ -447,8 +447,8 @@ public class LoginPage extends JPanel {
                 txtPassword.setText("tech123");
                 break;
             case "Customer":
-                txtEmail.setText("alice@email.com");
-                txtPassword.setText("alice123");
+                txtEmail.setText("szeying@gmail.com");
+                txtPassword.setText("12345678");
                 break;
         }
     }

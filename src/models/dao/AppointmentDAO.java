@@ -1,10 +1,9 @@
 package models.dao;
 
-import models.entities.Appointment;
-
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import models.entities.Appointment;
 
 public class AppointmentDAO {
 
