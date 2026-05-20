@@ -39,6 +39,7 @@ public class CounterStaffCreateAppointment extends JPanel {
 
     // ─── Step 3 ───────────────────────────────────────────────────────────────
     private JComboBox<String> techCombo;
+    private JButton btnViewSchedule;
 
     // ─── Right panel ──────────────────────────────────────────────────────────
     private JPanel techStatusPanel;
@@ -75,8 +76,10 @@ public class CounterStaffCreateAppointment extends JPanel {
 
         populateCustomerCombo();
         refreshTechStatus();
-        refreshSlots();
-        refreshTechCombo();
+
+        List<Appointment> appts = appointmentDAO.getAllAppointments();
+        refreshSlots(appts);
+        refreshTechCombo(appts);
     }
 
     public void setStaffId(String id) { this.staffId = id; }
@@ -189,10 +192,14 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel card = createStepCard();
 
         techCombo = UIComponent.createComboBox(new String[0]);
+        techCombo.setEnabled(false);
         techCombo.setPreferredSize(new Dimension(0, 38));
+        techCombo.setToolTipText("Select a service item, date, and time slot first");
 
-        JButton btnViewSchedule = UIComponent.createSmallButton("View Schedule");
+        btnViewSchedule = UIComponent.createSmallButton("View Schedule");
+        btnViewSchedule.setEnabled(false);
         btnViewSchedule.setPreferredSize(new Dimension(130, 36));
+        btnViewSchedule.setToolTipText("Select a service item, date, and time slot first");
         btnViewSchedule.addActionListener(e -> showTechSchedule());
 
         JPanel techRow = new JPanel(new BorderLayout(8, 0));
@@ -366,21 +373,23 @@ public class CounterStaffCreateAppointment extends JPanel {
     private void wireListeners() {
         dateField.addDateChangeListener(d -> onScheduleChanged());
         timeSlotCombo.addActionListener(e -> onScheduleChanged());
-        serviceItemCombo.addActionListener(e -> { });
+        serviceItemCombo.addActionListener(e -> refreshTechCombo()); // service type affects slot count
         customerCombo.addActionListener(e -> { });
         techCombo.addActionListener(e -> { });
     }
 
     private void onScheduleChanged() {
-        refreshSlots();
-        refreshTechCombo();
+        // Fetch appointments once and share across both refresh calls to avoid double DB hit
+        List<Appointment> appts = appointmentDAO.getAllAppointments();
+        refreshSlots(appts);
+        refreshTechCombo(appts);
     }
 
     // ─── Populate customer combo ───────────────────────────────────────────────
     private void populateCustomerCombo() {
         customerCombo.removeAllItems();
         customerCombo.addItem("-- Select Registered Customer --");
-        for (String[] c : customerDAO.getAllCustomers()) {
+        for (String[] c : customerDAO.getApprovedCustomers()) {
             customerCombo.addItem(c[0].trim() + " — " + c[2].trim()); // col 2 = customer_name
         }
     }
@@ -459,8 +468,29 @@ public class CounterStaffCreateAppointment extends JPanel {
         return row;
     }
 
+    // ─── Shared helper — slots occupied by an appointment in TIME_SLOTS index space ──
+    /**
+     * Returns the set of TIME_SLOTS entries that appointment {@code a} occupies.
+     * Major service (ST002) occupies 3 consecutive slots; Normal occupies 1.
+     */
+    private Set<String> occupiedSlotsOf(Appointment a) {
+        List<String> slotList  = Arrays.asList(TIME_SLOTS);
+        int startIndex = slotList.indexOf(a.getTimeSlot().trim());
+        if (startIndex < 0) return Collections.emptySet();
+        int count = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
+        Set<String> result = new HashSet<>();
+        for (int i = startIndex; i < Math.min(startIndex + count, TIME_SLOTS.length); i++) {
+            result.add(TIME_SLOTS[i]);
+        }
+        return result;
+    }
+
     // ─── Refresh slots panel — synced to date field, shows free/total count ────
     private void refreshSlots() {
+        refreshSlots(appointmentDAO.getAllAppointments());
+    }
+
+    private void refreshSlots(List<Appointment> allAppts) {
         slotsPanel.removeAll();
 
         // Resolve selected date — convert dd/MM/yyyy → yyyy-MM-dd
@@ -479,7 +509,7 @@ public class CounterStaffCreateAppointment extends JPanel {
         int totalTechs = technicianDAO.getAllTechnicians().size();
 
         // Count how many techs are booked per slot on the target date
-        List<Appointment> dateAppts = appointmentDAO.getAllAppointments().stream()
+        List<Appointment> dateAppts = allAppts.stream()
             .filter(a -> a.getAppointmentDate().equals(targetDate)
                 && (a.getStatus().equalsIgnoreCase("Approved")
                  || a.getStatus().equalsIgnoreCase("Pending"))
@@ -487,12 +517,13 @@ public class CounterStaffCreateAppointment extends JPanel {
                 && !a.getTechnicianId().equalsIgnoreCase("N/A"))
             .collect(Collectors.toList());
 
-        for (String slot : TIME_SLOTS) {
+        for (int si = 0; si < TIME_SLOTS.length; si++) {
+            final String slotStr = TIME_SLOTS[si];
             long booked = dateAppts.stream()
-                .filter(a -> a.getTimeSlot().trim().equalsIgnoreCase(slot.trim()))
+                .filter(a -> occupiedSlotsOf(a).contains(slotStr))
                 .count();
             int free = (int) Math.max(0, totalTechs - booked);
-            slotsPanel.add(buildSlotRow(slot, free, totalTechs));
+            slotsPanel.add(buildSlotRow(TIME_SLOTS[si], free, totalTechs));
             slotsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         }
         slotsPanel.revalidate();
@@ -556,36 +587,75 @@ public class CounterStaffCreateAppointment extends JPanel {
 
     // ─── Refresh technician combo (slot-based availability) ───────────────────
     private void refreshTechCombo() {
+        refreshTechCombo(appointmentDAO.getAllAppointments());
+    }
+
+    private void refreshTechCombo(List<Appointment> allAppts) {
         techCombo.removeAllItems();
-        techCombo.addItem("-- Select Technician --");
 
         String dateRaw = dateField.getText().trim();
-        // Convert dd/MM/yyyy → yyyy-MM-dd for comparison with stored dates
+        String slot    = (String) timeSlotCombo.getSelectedItem();
+
+        // Convert dd/MM/yyyy → yyyy-MM-dd
         String dateISO;
         try {
             LocalDate parsed = LocalDate.parse(dateRaw, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             dateISO = parsed.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         } catch (Exception ignored) {
-            dateISO = dateRaw; // already yyyy-MM-dd or empty
+            dateISO = dateRaw;
         }
-        final String date = dateISO; // effectively final for lambda
-        String slot = (String) timeSlotCombo.getSelectedItem();
 
-        final Set<String> busyIds = (!date.isEmpty() && slot != null)
-            ? appointmentDAO.getAllAppointments().stream()
-                .filter(a -> (a.getStatus().equalsIgnoreCase("Approved")
-                           || a.getStatus().equalsIgnoreCase("Pending"))
-                          && a.getAppointmentDate().trim().equals(date)
-                          && a.getTimeSlot().trim().equalsIgnoreCase(slot.trim())
-                          && a.getTechnicianId() != null
-                          && !a.getTechnicianId().equalsIgnoreCase("null")
-                          && !a.getTechnicianId().trim().isEmpty())
-                .map(Appointment::getTechnicianId)
-                .collect(Collectors.toSet())
-            : new HashSet<>();
+        String newServiceSel  = (String) serviceItemCombo.getSelectedItem();
+        boolean serviceChosen = newServiceSel != null && !newServiceSel.startsWith("--");
+        boolean ready         = !dateISO.isEmpty() && slot != null && serviceChosen;
 
-        System.out.println("[TechCombo] Total techs: " + technicianDAO.getAllTechnicians().size());
-        System.out.println("[TechCombo] Busy IDs for " + date + " @ " + slot + ": " + busyIds);
+        // Enable/disable based on whether service item, date, and slot are all chosen
+        techCombo.setEnabled(ready);
+        if (btnViewSchedule != null) btnViewSchedule.setEnabled(ready);
+
+        if (!ready) {
+            techCombo.addItem("-- Select date & time slot first --");
+            return;
+        }
+
+        techCombo.addItem("-- Select Technician --");
+
+        // Determine how many slots the NEW appointment would occupy,
+        // based on the service type currently selected in the form.
+        String newServiceItemId = newServiceSel.split(" — ")[0].trim();
+        String newServiceTypeId = ServiceItemDAO.getServiceTypeId(newServiceItemId);
+        int newSlotsNeeded = "ST002".equals(newServiceTypeId) ? 3 : 1;
+
+        // Build the set of slots the NEW appointment would occupy.
+        // Guard: if the selected slot isn't in TIME_SLOTS, show all techs as free
+        // rather than silently treating everyone as available.
+        List<String> slotList    = Arrays.asList(TIME_SLOTS);
+        int newStartIndex        = slotList.indexOf(slot.trim());
+        if (newStartIndex < 0) {
+            techCombo.addItem("(Invalid time slot selected)");
+            techCombo.setEnabled(false);
+            return;
+        }
+        Set<String> newOccupiedSlots = new HashSet<>();
+        for (int i = newStartIndex; i < Math.min(newStartIndex + newSlotsNeeded, TIME_SLOTS.length); i++) {
+            newOccupiedSlots.add(TIME_SLOTS[i]);
+        }
+
+        final String date = dateISO;
+
+        // A technician is busy if ANY of their existing appointments overlap
+        // with ANY of the slots the new appointment would occupy.
+        // Uses the shared occupiedSlotsOf() helper — no duplicate index logic.
+        final Set<String> busyIds = allAppts.stream()
+            .filter(a -> (a.getStatus().equalsIgnoreCase("Approved")
+                       || a.getStatus().equalsIgnoreCase("Pending"))
+                      && a.getAppointmentDate().trim().equals(date)
+                      && a.getTechnicianId() != null
+                      && !a.getTechnicianId().equalsIgnoreCase("null")
+                      && !a.getTechnicianId().trim().isEmpty()
+                      && !Collections.disjoint(occupiedSlotsOf(a), newOccupiedSlots))
+            .map(Appointment::getTechnicianId)
+            .collect(Collectors.toSet());
 
         List<Technician> free = technicianDAO.getAllTechnicians().stream()
             .filter(t -> !busyIds.contains(t.getTechnicianId()))
@@ -852,8 +922,9 @@ public class CounterStaffCreateAppointment extends JPanel {
         dateField.setDate(LocalDate.now());
         timeSlotCombo.setSelectedIndex(0);
         refreshTechStatus();
-        refreshSlots();
-        refreshTechCombo();
+        List<Appointment> appts = appointmentDAO.getAllAppointments();
+        refreshSlots(appts);
+        refreshTechCombo(appts);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

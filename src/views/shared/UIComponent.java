@@ -2,6 +2,8 @@ package views.shared;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -159,58 +161,54 @@ public final class UIComponent {
     }
 
     // ─── Sidebar nav buttons ──────────────────────────────────────────────────
-
-    /** Full-width sidebar nav item. Use setNavActive() to toggle active state. */
-    public static JButton createNavButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setMaximumSize(new Dimension(AppTheme.SIDEBAR_WIDTH, 42));
-        btn.setMinimumSize(new Dimension(AppTheme.SIDEBAR_WIDTH, 42));
-        btn.setPreferredSize(new Dimension(AppTheme.SIDEBAR_WIDTH, 42));
-        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBackground(AppTheme.SIDEBAR_BG);
-        btn.setForeground(AppTheme.TEXT_PRIMARY);
-        btn.setFont(AppTheme.FONT_SIDEBAR_ITEM);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setContentAreaFilled(true);
-        btn.setOpaque(true);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(0, 18, 0, 0));
-        btn.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                if (!AppTheme.SIDEBAR_ACTIVE_BG.equals(btn.getBackground())) {
-                    btn.setBackground(AppTheme.SIDEBAR_HOVER_BG);
-                }
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                if (!AppTheme.SIDEBAR_ACTIVE_BG.equals(btn.getBackground())) {
-                    btn.setBackground(AppTheme.SIDEBAR_BG);
-                }
-            }
-        });
-        return btn;
-    }
-
-    /**
-     * Switches active state between nav buttons.
-     * Call this whenever the user navigates: setNavActive(newBtn, previousBtn)
-     */
-    public static void setNavActive(JButton selected, JButton previous) {
-        if (previous != null) {
-            previous.setBackground(AppTheme.SIDEBAR_BG);
-            previous.setForeground(AppTheme.TEXT_PRIMARY);
-            previous.setFont(AppTheme.FONT_SIDEBAR_ITEM);
-            previous.setBorder(BorderFactory.createEmptyBorder(0, 18, 0, 0));
-        }
-        selected.setBackground(AppTheme.SIDEBAR_ACTIVE_BG);
-        selected.setForeground(AppTheme.PRIMARY);
-        selected.setFont(AppTheme.FONT_SIDEBAR_BOLD);
-        selected.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, AppTheme.NAV_INDICATOR_WIDTH, 0, 0, AppTheme.SIDEBAR_ACTIVE_INDICATOR),
-            BorderFactory.createEmptyBorder(0, 14, 0, 0)
-        ));
-    }
+	// ─── Nav Button ───────────────────────────────────────────────────────────
+	
+	public static JButton createNavButton(String label) {
+	    JButton btn = new JButton(label) {
+	        @Override
+	        protected void paintComponent(Graphics g) {
+	            if (Boolean.TRUE.equals(getClientProperty("active"))) {
+	                Graphics2D g2 = (Graphics2D) g.create();
+	                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	                g2.setColor(AppTheme.PRIMARY_LIGHT);
+	                g2.fillRoundRect(8, 3, getWidth() - 16, getHeight() - 6, 14, 14);
+	                g2.dispose();
+	            }
+	            super.paintComponent(g);
+	        }
+	    };
+	
+	    btn.setOpaque(false);
+	    btn.setContentAreaFilled(false);
+	    btn.setFocusPainted(false);
+	    btn.setBorderPainted(false);
+	    btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    btn.setMaximumSize(new Dimension(AppTheme.SIDEBAR_WIDTH, 44));
+	    btn.setPreferredSize(new Dimension(AppTheme.SIDEBAR_WIDTH, 44));
+	    btn.setFont(AppTheme.FONT_BODY);
+	    btn.setForeground(AppTheme.TEXT_PRIMARY);
+	    btn.setHorizontalAlignment(SwingConstants.LEFT);
+	    btn.setBorder(new EmptyBorder(0, 18, 0, 0));
+	    btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+	
+	    return btn;
+	}
+	
+	// ─── Nav Active / Inactive toggle ─────────────────────────────────────────
+	
+	public static void setNavActive(JButton selected, JButton previous) {
+	    if (previous != null) {
+	        previous.putClientProperty("active", false);
+	        previous.setForeground(AppTheme.TEXT_PRIMARY);
+	        previous.setFont(AppTheme.FONT_BODY);
+	        previous.repaint();
+	    }
+	
+	    selected.putClientProperty("active", true);
+	    selected.setForeground(AppTheme.PRIMARY);
+	    selected.setFont(AppTheme.FONT_BODY_BOLD);
+	    selected.repaint();
+	}
 
     // ─── Cards ────────────────────────────────────────────────────────────────
 

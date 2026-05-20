@@ -38,6 +38,32 @@ public class CustomerDAO {
         }
         return list;
     }
+    
+    // ─── Get approved customers ────────────────────────────────────────────────────
+
+    public List<String[]> getApprovedCustomers() {
+        List<String[]> list = new ArrayList<>();
+        Path path = Paths.get(FILE_PATH);
+        if (!Files.exists(path)) return list;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(path.toFile()))) {
+            String line;
+            boolean firstLine = true;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                if (firstLine) {
+                    firstLine = false;
+                    if (line.toLowerCase().startsWith("customer_id")) continue;
+                }
+                String[] parts = line.split("\\|", -1);
+                if (parts.length >= 7 && parts[5].trim().equalsIgnoreCase("Approved")) list.add(parts);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 
     // ─── Register customer ────────────────────────────────────────────────────
 

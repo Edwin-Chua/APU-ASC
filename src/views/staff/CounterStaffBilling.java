@@ -39,11 +39,11 @@ public class CounterStaffBilling extends JPanel {
         {"Appt ID", "Customer ID", "Vehicle Plate", "Service Item", "Date", "Status"};
 
     // ── Filter / table state ──────────────────────────────────────────────────
-    private JComboBox<String> filterStatus;
-    private JTextField        filterDateField;
-    private JLabel            countLabel;
-    private DefaultTableModel tableModel;
-    private JTable            apptTable;
+    private JComboBox<String>        filterStatus;
+    private UIComponent.DatePickerField filterDateField; // ← fixed: was plain JTextField
+    private JLabel                   countLabel;
+    private DefaultTableModel        tableModel;
+    private JTable                   apptTable;
 
     // Live data list (Completed + Paid appointments only)
     private List<Appointment> displayedAppointments;
@@ -55,12 +55,12 @@ public class CounterStaffBilling extends JPanel {
     // form fields
     private JTextField amountField;
     private JTextField additionalChargeField;
-    private JLabel    totalAmountLabel;
+    private JLabel     totalAmountLabel;
     private JComboBox<String> paymentMethodCombo;
 
     // selected appointment row data
     private String selectedApptId  = "";
-    private String selectedStaffId = "CS001"; // replace with session user
+    private String selectedStaffId = "CS001"; // replaced via setStaffId()
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -72,6 +72,16 @@ public class CounterStaffBilling extends JPanel {
         JScrollPane scroll = UIComponent.createAppleScrollPane(new JScrollPane(content));
         scroll.setBorder(BorderFactory.createEmptyBorder());
         add(scroll, BorderLayout.CENTER);
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    public void setStaffId(String staffId) {
+        this.selectedStaffId = staffId;
+    }
+
+    public void refresh() {
+        applyFilter();
     }
 
     // ── Content builder ───────────────────────────────────────────────────────
@@ -129,17 +139,16 @@ public class CounterStaffBilling extends JPanel {
         lblFilter.setFont(AppTheme.FONT_SMALL);
         lblFilter.setForeground(AppTheme.TEXT_SECONDARY);
 
-        filterStatus = UIComponent.createComboBox(new String[]{
-            "All", "Completed", "Paid"});
-        filterStatus.setPreferredSize(new Dimension(140, 38));
+        filterStatus = UIComponent.createComboBox(new String[]{"All", "Completed", "Paid"});
+        filterStatus.setPreferredSize(new Dimension(142, 38));
 
         JLabel lblDate = new JLabel("Date:");
         lblDate.setFont(AppTheme.FONT_SMALL);
         lblDate.setForeground(AppTheme.TEXT_SECONDARY);
 
-        filterDateField = UIComponent.createTextField("yyyy-MM-dd");
+        // ← Fixed: DatePickerField instead of plain JTextField
+        filterDateField = UIComponent.createDatePicker(null);
         filterDateField.setPreferredSize(new Dimension(120, 38));
-        filterDateField.setMaximumSize(new Dimension(120, 38));
 
         JButton btnFilter = UIComponent.createSmallButton("Filter");
         btnFilter.setPreferredSize(new Dimension(72, 34));
@@ -149,7 +158,7 @@ public class CounterStaffBilling extends JPanel {
         btnRefresh.setPreferredSize(new Dimension(95, 34));
         btnRefresh.addActionListener(e -> {
             filterStatus.setSelectedIndex(0);
-            filterDateField.setText("");
+            filterDateField.setDate(null); // ← fixed: was setText("")
             applyFilter();
         });
 
@@ -212,7 +221,7 @@ public class CounterStaffBilling extends JPanel {
         for (int i = 0; i < APPT_COLUMNS.length; i++)
             apptTable.getColumnModel().getColumn(i).setHeaderRenderer(hdrRenderer);
 
-        // Column widths (6 columns)
+        // Column widths
         int[] widths = {80, 100, 120, 100, 110, 110};
         for (int i = 0; i < widths.length; i++)
             apptTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
@@ -245,7 +254,7 @@ public class CounterStaffBilling extends JPanel {
             }
         });
 
-        // Row click → open payment form (only if status is Completed; show info if Paid)
+        // Row click → open payment form (Completed) or show info (Paid)
         apptTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int row = apptTable.getSelectedRow();
@@ -254,7 +263,6 @@ public class CounterStaffBilling extends JPanel {
                     if ("Paid".equalsIgnoreCase(status)) {
                         formPanel.setVisible(false);
                         String apptId = tableModel.getValueAt(row, 0).toString();
-                        // Look up existing payment record for info message
                         Payment existingPayment = paymentDAO.getPaymentByAppointmentId(apptId);
                         String info = "Appointment " + apptId + " has already been paid and cannot be reprocessed.";
                         if (existingPayment != null) {
@@ -268,10 +276,8 @@ public class CounterStaffBilling extends JPanel {
                             );
                         }
                         JOptionPane.showMessageDialog(
-                            CounterStaffBilling.this,
-                            info,
-                            "Already Paid",
-                            JOptionPane.INFORMATION_MESSAGE);
+                            CounterStaffBilling.this, info,
+                            "Already Paid", JOptionPane.INFORMATION_MESSAGE);
                         apptTable.clearSelection();
                     } else {
                         openPaymentForm(row);
@@ -312,7 +318,7 @@ public class CounterStaffBilling extends JPanel {
         card.add(scroll,    BorderLayout.CENTER);
         card.add(statusBar, BorderLayout.SOUTH);
 
-        // Initial population — applyFilter is the single source of truth
+        // Initial load
         applyFilter();
 
         JPanel wrapper = new JPanel(new BorderLayout());
@@ -321,6 +327,10 @@ public class CounterStaffBilling extends JPanel {
         wrapper.add(card, BorderLayout.CENTER);
         return wrapper;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Filter logic
+    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Loads Completed + Paid appointments from AppointmentDAO,
@@ -332,7 +342,28 @@ public class CounterStaffBilling extends JPanel {
         String statusFilter = (String) filterStatus.getSelectedItem();
         String dateFilter   = filterDateField.getText().trim();
 
-        // Load from DAO — only Completed and Paid
+        // ── Normalise date string to yyyy-MM-dd ───────────────────────────────
+        String isoDate = "";
+        if (!dateFilter.isEmpty()) {
+            try {
+                LocalDate.parse(dateFilter, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                isoDate = dateFilter; // already correct
+            } catch (Exception e1) {
+                try {
+                    isoDate = LocalDate.parse(dateFilter,
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } catch (Exception e2) {
+                    try {
+                        isoDate = LocalDate.parse(dateFilter,
+                            DateTimeFormatter.ofPattern("MM/dd/yyyy"))
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        // ── Load from DAO ─────────────────────────────────────────────────────
         List<Appointment> completed = appointmentDAO.getAppointmentsByStatus("Completed");
         List<Appointment> paid      = appointmentDAO.getAppointmentsByStatus("Paid");
 
@@ -347,7 +378,7 @@ public class CounterStaffBilling extends JPanel {
             if ("Completed".equalsIgnoreCase(status)) completedCount++;
 
             boolean matchStatus = "All".equals(statusFilter) || status.equalsIgnoreCase(statusFilter);
-            boolean matchDate   = dateFilter.isEmpty() || a.getAppointmentDate().equals(dateFilter);
+            boolean matchDate   = isoDate.isEmpty() || a.getAppointmentDate().equals(isoDate);
 
             if (matchStatus && matchDate) {
                 tableModel.addRow(new Object[]{
@@ -391,29 +422,24 @@ public class CounterStaffBilling extends JPanel {
 
         section.add(headerRow);
 
-        // ── Two-column card layout ─────────────────────────────────────────
+        // ── Two-column card layout ─────────────────────────────────────────────
         JPanel twoCol = new JPanel(new GridBagLayout());
         twoCol.setOpaque(false);
         twoCol.setAlignmentX(Component.LEFT_ALIGNMENT);
         twoCol.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill      = GridBagConstraints.BOTH;
-        gbc.weightx   = 1.0;
-        gbc.weighty   = 1.0;
-        gbc.insets    = new Insets(0, 0, 0, 0);
-        gbc.gridx     = 0; gbc.gridy = 0;
+        gbc.fill    = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.insets  = new Insets(0, 0, 0, 0);
+        gbc.gridx   = 0; gbc.gridy = 0;
 
-        // Left card — appointment summary
-        JPanel leftCard = buildSummaryCard();
-        twoCol.add(leftCard, gbc);
+        twoCol.add(buildSummaryCard(), gbc);
 
         gbc.insets = new Insets(0, AppTheme.GAP_ITEM, 0, 0);
         gbc.gridx  = 1;
-
-        // Right card — payment inputs
-        JPanel rightCard = buildPaymentInputCard();
-        twoCol.add(rightCard, gbc);
+        twoCol.add(buildPaymentInputCard(), gbc);
 
         section.add(twoCol);
         return section;
@@ -428,15 +454,14 @@ public class CounterStaffBilling extends JPanel {
         JPanel card = UIComponent.createCard();
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel heading = UIComponent.createSectionLabel("Appointment Summary");
-        card.add(heading);
+        card.add(UIComponent.createSectionLabel("Appointment Summary"));
 
-        summaryApptId     = UIComponent.createInfoRow("Appointment ID",  "—");
-        summaryCustomer   = UIComponent.createInfoRow("Customer ID",     "—");
-        summaryPlate      = UIComponent.createInfoRow("Vehicle Plate",   "—");
-        summaryService    = UIComponent.createInfoRow("Service Item",    "—");
-        summaryDate       = UIComponent.createInfoRow("Date",            "—");
-        summaryApptStatus = UIComponent.createInfoRow("Status",          "—");
+        summaryApptId     = UIComponent.createInfoRow("Appointment ID", "—");
+        summaryCustomer   = UIComponent.createInfoRow("Customer ID",    "—");
+        summaryPlate      = UIComponent.createInfoRow("Vehicle Plate",  "—");
+        summaryService    = UIComponent.createInfoRow("Service Item",   "—");
+        summaryDate       = UIComponent.createInfoRow("Date",           "—");
+        summaryApptStatus = UIComponent.createInfoRow("Status",         "—");
 
         card.add(summaryApptId);
         card.add(UIComponent.createRowDivider());
@@ -459,8 +484,7 @@ public class CounterStaffBilling extends JPanel {
         JPanel card = UIComponent.createCard();
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel heading = UIComponent.createSectionLabel("Payment Details");
-        card.add(heading);
+        card.add(UIComponent.createSectionLabel("Payment Details"));
 
         // Amount — pre-filled from service item price (read-only)
         card.add(UIComponent.createFieldLabel("AMOUNT (RM)"));
@@ -493,12 +517,12 @@ public class CounterStaffBilling extends JPanel {
         totalAmountLabel.setFont(AppTheme.FONT_HEADING_3);
         totalAmountLabel.setForeground(AppTheme.PRIMARY);
         totalAmountLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        totalRow.add(totalLbl,        BorderLayout.WEST);
+        totalRow.add(totalLbl,         BorderLayout.WEST);
         totalRow.add(totalAmountLabel, BorderLayout.EAST);
         card.add(totalRow);
         card.add(UIComponent.verticalGap(AppTheme.GAP_ITEM));
 
-        // Wire up live total calculation
+        // Live total recalculation
         KeyAdapter totalUpdater = new KeyAdapter() {
             @Override public void keyReleased(KeyEvent e) { recalcTotal(); }
         };
@@ -514,7 +538,7 @@ public class CounterStaffBilling extends JPanel {
         card.add(paymentMethodCombo);
         card.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
-        // Confirm + cancel buttons side by side
+        // Confirm + Cancel buttons
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.GAP_ITEM, 0));
         btnRow.setOpaque(false);
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -536,12 +560,10 @@ public class CounterStaffBilling extends JPanel {
         return card;
     }
 
-
     // ─────────────────────────────────────────────────────────────────────────
     // Logic helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Recalculates and updates the total label from the two amount fields. */
     private void recalcTotal() {
         double amt   = parseDouble(amountField.getText());
         double extra = parseDouble(additionalChargeField.getText());
@@ -553,13 +575,7 @@ public class CounterStaffBilling extends JPanel {
         catch (NumberFormatException e) { return 0.0; }
     }
 
-    /**
-     * Called when "Confirm Payment" is clicked.
-     * Validates inputs, writes a Payment record via PaymentDAO,
-     * and updates the appointment status to "Paid" via AppointmentDAO.
-     */
     private void handleConfirmPayment() {
-        // ── Basic validation ──────────────────────────────────────────────────
         String amtStr   = amountField.getText().trim();
         String extraStr = additionalChargeField.getText().trim();
 
@@ -569,24 +585,17 @@ public class CounterStaffBilling extends JPanel {
         }
 
         String method = (String) paymentMethodCombo.getSelectedItem();
-
-        // ── Build Payment entity and persist via PaymentDAO ───────────────────
         double amount = parseDouble(amtStr);
         double extra  = parseDouble(extraStr.isEmpty() ? "0.00" : extraStr);
         double total  = amount + extra;
         String date   = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-        // Generate IDs via DAO
         String paymentId = paymentDAO.generateNextPaymentId();
         String receiptNo = paymentDAO.generateNextReceiptNo();
 
         Payment payment = new Payment(
-            paymentId,
-            selectedApptId,
-            String.format("%.2f", amount),
-            method,
-            date,
-            receiptNo,
+            paymentId, selectedApptId,
+            String.format("%.2f", amount), method, date, receiptNo,
             selectedStaffId,
             String.format("%.2f", extra),
             String.format("%.2f", total)
@@ -598,13 +607,12 @@ public class CounterStaffBilling extends JPanel {
             return;
         }
 
-        // ── Update appointment status to Paid via AppointmentDAO ──────────────
         boolean statusUpdated = appointmentDAO.markAppointmentAsPaid(selectedApptId);
         if (!statusUpdated) {
             showError("Payment saved but appointment status could not be updated.");
         }
 
-        // ── Success dialog ────────────────────────────────────────────────────
+        // Success dialog
         JPanel msg = new JPanel();
         msg.setLayout(new BoxLayout(msg, BoxLayout.Y_AXIS));
         msg.setOpaque(false);
@@ -635,10 +643,8 @@ public class CounterStaffBilling extends JPanel {
         JOptionPane.showMessageDialog(this, msg, "Payment Confirmed",
             JOptionPane.INFORMATION_MESSAGE);
 
-        // Refresh table from DAO to reflect the new Paid status
         applyFilter();
 
-        // Reset form
         formPanel.setVisible(false);
         amountField.setText("");
         additionalChargeField.setText("0.00");
@@ -650,35 +656,29 @@ public class CounterStaffBilling extends JPanel {
             JOptionPane.WARNING_MESSAGE);
     }
 
-    /**
-     * Called when a Completed row is clicked in the table.
-     * Populates the form with the selected row's data.
-     */
     private void openPaymentForm(int row) {
         selectedApptId = tableModel.getValueAt(row, 0).toString();
-
         formApptIdLabel.setText("Process Payment — " + selectedApptId);
 
-        // Update summary card labels
-        updateInfoRow(summaryApptId,     "Appointment ID",  tableModel.getValueAt(row, 0).toString());
-        updateInfoRow(summaryCustomer,   "Customer ID",     tableModel.getValueAt(row, 1).toString());
-        updateInfoRow(summaryPlate,      "Vehicle Plate",   tableModel.getValueAt(row, 2).toString());
-        updateInfoRow(summaryDate,       "Date",            tableModel.getValueAt(row, 4).toString());
-        updateInfoRow(summaryApptStatus, "Status",          tableModel.getValueAt(row, 5).toString());
+        updateInfoRow(summaryApptId,     tableModel.getValueAt(row, 0).toString());
+        updateInfoRow(summaryCustomer,   tableModel.getValueAt(row, 1).toString());
+        updateInfoRow(summaryPlate,      tableModel.getValueAt(row, 2).toString());
+        updateInfoRow(summaryDate,       tableModel.getValueAt(row, 4).toString());
+        updateInfoRow(summaryApptStatus, tableModel.getValueAt(row, 5).toString());
 
-        // Pre-fill amount from ServiceItemDAO using the service item on this appointment
         String serviceItemId = tableModel.getValueAt(row, 3).toString();
-        String serviceName = ServiceItemDAO.getServiceName(serviceItemId);
+        String serviceName   = ServiceItemDAO.getServiceName(serviceItemId);
         String serviceDisplay = serviceItemId.equals(serviceName)
-            ? serviceItemId                          // name not found — show ID only
-            : serviceItemId + " - " + serviceName;  // e.g. "SI001 - Oil Change"
-        updateInfoRow(summaryService, "Service Item", serviceDisplay);
+            ? serviceItemId
+            : serviceItemId + " - " + serviceName;
+        updateInfoRow(summaryService, serviceDisplay);
+
         String priceStr = "0.00";
         for (String[] item : ServiceItemDAO.getAllServiceItems()) {
             if (item[0].equals(serviceItemId)) { priceStr = item[3]; break; }
         }
         amountField.setText(priceStr);
-        amountField.setEditable(false);  // price is fixed from service data
+        amountField.setEditable(false);
         amountField.setBackground(new Color(245, 245, 247));
         additionalChargeField.setText("0.00");
         recalcTotal();
@@ -686,7 +686,6 @@ public class CounterStaffBilling extends JPanel {
 
         formPanel.setVisible(true);
 
-        // Scroll down to form
         SwingUtilities.invokeLater(() -> {
             JScrollPane sp = (JScrollPane) SwingUtilities.getAncestorOfClass(
                 JScrollPane.class, formPanel);
@@ -697,10 +696,9 @@ public class CounterStaffBilling extends JPanel {
         });
     }
 
-    /** Replaces the value label text in an info row panel. */
-    private void updateInfoRow(JPanel row, String label, String value) {
+    /** Updates the value label of an info row panel (BorderLayout CENTER). */
+    private void updateInfoRow(JPanel row, String value) {
         if (row == null) return;
-        // InfoRow layout: BorderLayout, WEST = label, CENTER = value label
         Component center = ((BorderLayout) row.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         if (center instanceof JLabel) ((JLabel) center).setText(value);
     }
