@@ -13,10 +13,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import models.customer_function.*;
 
 public class CustomerPortal extends JFrame {
-
-    // =========================================================================
-    // DESIGN SYSTEM
-    // =========================================================================
     private static final class DS {
 
         // Backgrounds
@@ -114,9 +110,6 @@ public class CustomerPortal extends JFrame {
         setVisible(true);
     }
 
-    // =========================================================================
-    // HEADER
-    // =========================================================================
     private JPanel buildHeader() {
         JPanel h = new JPanel(new BorderLayout());
         h.setBackground(DS.BG_HEADER);
@@ -130,9 +123,6 @@ public class CustomerPortal extends JFrame {
         return h;
     }
 
-    // =========================================================================
-    // MAIN AREA
-    // =========================================================================
     private JPanel buildMainArea() {
         JPanel area = new JPanel(new BorderLayout());
         area.setBackground(DS.BG_PAGE);
@@ -428,9 +418,6 @@ public class CustomerPortal extends JFrame {
         panel.add(row);
     }
 
-    // =========================================================================
-    // MAKE APPOINTMENT PAGE
-    // =========================================================================
     private JPanel buildMakeApptPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(DS.BG_PAGE);
@@ -465,7 +452,6 @@ public class CustomerPortal extends JFrame {
         JTextField brandF  = formField("e.g. Honda");
         JTextField modelF  = formField("e.g. Civic");
         JTextField plateF  = formField("e.g. WAB 1234");
-        JTextField remarkF = formField("Optional");
 
         List<ServiceItem> all = serviceItemDAO.getAllServiceItems();
         Set<String> catSet = new HashSet<>();
@@ -528,7 +514,6 @@ public class CustomerPortal extends JFrame {
         addFormRow(form, g, r++, "Service Item *",   itemBox);
         addFormRow(form, g, r++, "Preferred Date *", datePicker);
         addFormRow(form, g, r++, "Preferred Time *", timeBox);
-        addFormRow(form, g, r++, "Remarks",          remarkF);
 
         JButton submit = primaryBtn("Confirm Booking");
         submit.addActionListener(e -> {
@@ -542,15 +527,14 @@ public class CustomerPortal extends JFrame {
             if (sel.isBefore(today)) { dlgWarn("Please select a future date."); return; }
 
             ServiceItem si = (ServiceItem) itemBox.getSelectedItem();
-            String rem = remarkF.getText().trim().isEmpty() ? "N/A" : remarkF.getText().trim();
 
             boolean ok = appointmentDAO.submitAppointment(
                 customerID, si.getServiceItemID(), sel, (String) timeBox.getSelectedItem(),
-                brandF.getText().trim(), modelF.getText().trim(), plateF.getText().trim(), rem);
+                brandF.getText().trim(), modelF.getText().trim(), plateF.getText().trim(), "N/A");
 
             if (ok) {
                 dlgInfo("Appointment booked for " + sel.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + ".");
-                brandF.setText(""); modelF.setText(""); plateF.setText(""); remarkF.setText("");
+                brandF.setText(""); modelF.setText(""); plateF.setText("");
                 catBox.setSelectedIndex(0);
                 yearBox.setSelectedItem(today.getYear());
                 monthBox.setSelectedItem(today.getMonthValue());
@@ -577,9 +561,6 @@ public class CustomerPortal extends JFrame {
         p.add(label(lbl, DS.regular(12), DS.FG_SECONDARY));
     }
 
-    // =========================================================================
-    // HISTORY PAGE
-    // =========================================================================
     private JPanel buildHistoryPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(DS.BG_PAGE);
@@ -647,13 +628,12 @@ public class CustomerPortal extends JFrame {
         tableScroll.setBorder(new LineBorder(DS.BORDER));
         tableScroll.getViewport().setBackground(DS.BG_CARD);
 
-        // Feedback section
+        // ── Feedback section (Technician + Staff) ─────────────────────────
         JPanel feedbackSection = new JPanel(new BorderLayout(0, 8));
         feedbackSection.setBackground(DS.BG_PAGE);
         feedbackSection.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         JLabel fbTitle = label("Feedback / Comments", DS.bold(14), DS.FG_LABEL);
-
         JLabel fbHint = label("Click a row above to select an appointment before submitting feedback.",
             DS.regular(11), DS.FG_SECONDARY);
 
@@ -662,43 +642,99 @@ public class CustomerPortal extends JFrame {
         feedbackTopPanel.add(fbTitle, BorderLayout.NORTH);
         feedbackTopPanel.add(fbHint,  BorderLayout.SOUTH);
 
-        JPanel ratingRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        ratingRow.setBackground(DS.BG_PAGE);
-        ratingRow.add(label("Rating:", DS.regular(12), DS.FG_LABEL));
         String[] ratings = {"Select rating","1 — Poor","2 — Fair","3 — Good","4 — Very Good","5 — Excellent"};
-        JComboBox<String> ratingBox = styledCombo(ratings);
-        ratingBox.setEnabled(false);
-        ratingRow.add(ratingBox);
 
-        JTextArea fbArea = new JTextArea(4, 0);
-        fbArea.setFont(DS.regular(13));
-        fbArea.setForeground(DS.FG_LABEL);
-        fbArea.setLineWrap(true);
-        fbArea.setWrapStyleWord(true);
-        fbArea.setBorder(new CompoundBorder(
-            new LineBorder(DS.BORDER),
-            new EmptyBorder(8, 10, 8, 10)));
-        fbArea.setEnabled(false);
-        fbArea.setDisabledTextColor(DS.FG_SECONDARY);
-        fbArea.setText("Select an appointment first...");
+        // ── Technician feedback panel ──────────────────────────────────
+        JLabel techLabel = label("Technician Feedback", DS.bold(12), DS.FG_LABEL);
+        JPanel techRatingRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        techRatingRow.setBackground(DS.BG_PAGE);
+        techRatingRow.add(label("Rating:", DS.regular(12), DS.FG_LABEL));
+        JComboBox<String> techRatingBox = styledCombo(ratings);
+        techRatingBox.setEnabled(false);
+        techRatingRow.add(techRatingBox);
+
+        JTextArea techFbArea = new JTextArea(3, 0);
+        techFbArea.setFont(DS.regular(13));
+        techFbArea.setForeground(DS.FG_LABEL);
+        techFbArea.setLineWrap(true); techFbArea.setWrapStyleWord(true);
+        techFbArea.setBorder(new CompoundBorder(new LineBorder(DS.BORDER), new EmptyBorder(8, 10, 8, 10)));
+        techFbArea.setEnabled(false); techFbArea.setDisabledTextColor(DS.FG_SECONDARY);
+        techFbArea.setText("Select an appointment first...");
+
+        JLabel techStatus = label(" ", DS.regular(11), DS.FG_SECONDARY);
+
+        JPanel techTopRow = new JPanel(new BorderLayout(0, 4));
+        techTopRow.setBackground(DS.BG_PAGE);
+        techTopRow.add(techLabel, BorderLayout.NORTH);
+        JPanel techRatingAndStatus = new JPanel(new BorderLayout(0, 2));
+        techRatingAndStatus.setBackground(DS.BG_PAGE);
+        techRatingAndStatus.add(techRatingRow, BorderLayout.NORTH);
+        techRatingAndStatus.add(techStatus, BorderLayout.SOUTH);
+        techTopRow.add(techRatingAndStatus, BorderLayout.SOUTH);
+
+        JPanel techPanel = new JPanel(new BorderLayout(0, 6));
+        techPanel.setBackground(DS.BG_PAGE);
+        techPanel.add(techTopRow, BorderLayout.NORTH);
+        techPanel.add(new JScrollPane(techFbArea), BorderLayout.CENTER);
+
+        // ── Staff feedback panel ───────────────────────────────────────
+        JLabel staffLabel = label("Counter Staff Feedback", DS.bold(12), DS.FG_LABEL);
+        JPanel staffRatingRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        staffRatingRow.setBackground(DS.BG_PAGE);
+        staffRatingRow.add(label("Rating:", DS.regular(12), DS.FG_LABEL));
+        JComboBox<String> staffRatingBox = styledCombo(ratings);
+        staffRatingBox.setEnabled(false);
+        staffRatingRow.add(staffRatingBox);
+
+        JTextArea staffFbArea = new JTextArea(3, 0);
+        staffFbArea.setFont(DS.regular(13));
+        staffFbArea.setForeground(DS.FG_LABEL);
+        staffFbArea.setLineWrap(true); staffFbArea.setWrapStyleWord(true);
+        staffFbArea.setBorder(new CompoundBorder(new LineBorder(DS.BORDER), new EmptyBorder(8, 10, 8, 10)));
+        staffFbArea.setEnabled(false); staffFbArea.setDisabledTextColor(DS.FG_SECONDARY);
+        staffFbArea.setText("Select an appointment first...");
+
+        JLabel staffStatus = label(" ", DS.regular(11), DS.FG_SECONDARY);
+
+        JPanel staffTopRow = new JPanel(new BorderLayout(0, 4));
+        staffTopRow.setBackground(DS.BG_PAGE);
+        staffTopRow.add(staffLabel, BorderLayout.NORTH);
+        JPanel staffRatingAndStatus = new JPanel(new BorderLayout(0, 2));
+        staffRatingAndStatus.setBackground(DS.BG_PAGE);
+        staffRatingAndStatus.add(staffRatingRow, BorderLayout.NORTH);
+        staffRatingAndStatus.add(staffStatus, BorderLayout.SOUTH);
+        staffTopRow.add(staffRatingAndStatus, BorderLayout.SOUTH);
+
+        JPanel staffPanel = new JPanel(new BorderLayout(0, 6));
+        staffPanel.setBackground(DS.BG_PAGE);
+        staffPanel.add(staffTopRow, BorderLayout.NORTH);
+        staffPanel.add(new JScrollPane(staffFbArea), BorderLayout.CENTER);
+
+        JPanel dualPanel = new JPanel(new GridLayout(1, 2, 16, 0));
+        dualPanel.setBackground(DS.BG_PAGE);
+        dualPanel.add(techPanel);
+        dualPanel.add(staffPanel);
 
         JButton submitFb = primaryBtn("Submit Feedback");
         submitFb.setEnabled(false);
-
-        JPanel submitRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 4));
-        submitRow.setBackground(DS.BG_PAGE);
-        submitRow.add(submitFb);
+        JPanel submitFbRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 4));
+        submitFbRow.setBackground(DS.BG_PAGE);
+        submitFbRow.add(submitFb);
 
         JPanel inputPanel = new JPanel(new BorderLayout(0, 8));
         inputPanel.setBackground(DS.BG_PAGE);
-        inputPanel.add(ratingRow,               BorderLayout.NORTH);
-        inputPanel.add(new JScrollPane(fbArea),  BorderLayout.CENTER);
-        inputPanel.add(submitRow,               BorderLayout.SOUTH);
+        inputPanel.add(dualPanel,    BorderLayout.CENTER);
+        inputPanel.add(submitFbRow,  BorderLayout.SOUTH);
 
         feedbackSection.add(feedbackTopPanel, BorderLayout.NORTH);
         feedbackSection.add(inputPanel,       BorderLayout.CENTER);
 
+
         final String[] selID = {null};
+        final String[] selTechID = {null};
+        final String[] selStaffID = {null};
+        final boolean[] techAlreadySubmitted = {false};
+        final boolean[] staffAlreadySubmitted = {false};
 
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
@@ -706,46 +742,131 @@ public class CustomerPortal extends JFrame {
             if (row < 0 || history == null || row >= history.size()) return;
             Appointment selAppt = history.get(row);
             selID[0] = selAppt.getAppointmentID();
+            selTechID[0] = selAppt.getTechnicianID();
+            selStaffID[0] = selAppt.getStaffID();
             String selStatus = selAppt.getStatus();
 
             if (!"Completed".equalsIgnoreCase(selStatus)) {
-                // Only completed appointments can be rated
-                fbArea.setEnabled(false); fbArea.setText("");
-                ratingBox.setEnabled(false); ratingBox.setSelectedIndex(0);
+                techFbArea.setEnabled(false); techFbArea.setText("");
+                techRatingBox.setEnabled(false); techRatingBox.setSelectedIndex(0);
+                staffFbArea.setEnabled(false); staffFbArea.setText("");
+                staffRatingBox.setEnabled(false); staffRatingBox.setSelectedIndex(0);
                 submitFb.setEnabled(false);
+                techStatus.setText(" "); staffStatus.setText(" ");
                 fbHint.setText("Only completed appointments can be rated.");
                 fbHint.setForeground(DS.FG_ORANGE);
+                techAlreadySubmitted[0] = false;
+                staffAlreadySubmitted[0] = false;
             } else {
-                Feedback ex = feedbackDAO.getFeedbackByAppointmentID(selID[0]);
-                if (ex != null) {
-                    fbArea.setEnabled(false); fbArea.setText(ex.getComment());
-                    ratingBox.setEnabled(false);
-                    try { ratingBox.setSelectedIndex(Integer.parseInt(ex.getRating())); }
-                    catch (NumberFormatException ignored) { ratingBox.setSelectedIndex(0); }
-                    submitFb.setEnabled(false);
-                    fbHint.setText("You have already submitted feedback for this appointment.");
-                    fbHint.setForeground(DS.FG_GREEN);
+                fbHint.setText("Rate the technician and counter staff separately, then click Submit.");
+                fbHint.setForeground(DS.FG_SECONDARY);
+
+                Feedback exTech = feedbackDAO.getFeedbackByAppointmentAndTarget(selID[0], "TECHNICIAN");
+                if (selTechID[0] == null || selTechID[0].isEmpty()
+                        || "N/A".equalsIgnoreCase(selTechID[0]) || "null".equalsIgnoreCase(selTechID[0])) {
+                    techFbArea.setEnabled(false); techFbArea.setText("");
+                    techRatingBox.setEnabled(false); techRatingBox.setSelectedIndex(0);
+                    techStatus.setText("No technician assigned.");
+                    techStatus.setForeground(DS.FG_ORANGE);
+                    techAlreadySubmitted[0] = true;
+                } else if (exTech != null) {
+                    techFbArea.setEnabled(false); techFbArea.setText(exTech.getComment());
+                    techRatingBox.setEnabled(false);
+                    try { techRatingBox.setSelectedIndex(Integer.parseInt(exTech.getRating())); }
+                    catch (NumberFormatException ignored) { techRatingBox.setSelectedIndex(0); }
+                    techStatus.setText("Feedback already submitted.");
+                    techStatus.setForeground(DS.FG_GREEN);
+                    techAlreadySubmitted[0] = true;
                 } else {
-                    fbArea.setEnabled(true); fbArea.setText(""); fbArea.setForeground(DS.FG_LABEL);
-                    ratingBox.setEnabled(true); ratingBox.setSelectedIndex(0);
-                    submitFb.setEnabled(true);
-                    fbHint.setText("Write your feedback below and click Submit.");
-                    fbHint.setForeground(DS.FG_SECONDARY);
+                    techFbArea.setEnabled(true); techFbArea.setText(""); techFbArea.setForeground(DS.FG_LABEL);
+                    techRatingBox.setEnabled(true); techRatingBox.setSelectedIndex(0);
+                    techStatus.setText(" ");
+                    techAlreadySubmitted[0] = false;
+                }
+
+                // ── Staff feedback state ──
+                Feedback exStaff = feedbackDAO.getFeedbackByAppointmentAndTarget(selID[0], "STAFF");
+                if (selStaffID[0] == null || selStaffID[0].isEmpty()
+                        || "N/A".equalsIgnoreCase(selStaffID[0]) || "null".equalsIgnoreCase(selStaffID[0])) {
+                    staffFbArea.setEnabled(false); staffFbArea.setText("");
+                    staffRatingBox.setEnabled(false); staffRatingBox.setSelectedIndex(0);
+                    staffStatus.setText("No counter staff assigned.");
+                    staffStatus.setForeground(DS.FG_ORANGE);
+                    staffAlreadySubmitted[0] = true;
+                } else if (exStaff != null) {
+                    staffFbArea.setEnabled(false); staffFbArea.setText(exStaff.getComment());
+                    staffRatingBox.setEnabled(false);
+                    try { staffRatingBox.setSelectedIndex(Integer.parseInt(exStaff.getRating())); }
+                    catch (NumberFormatException ignored) { staffRatingBox.setSelectedIndex(0); }
+                    staffStatus.setText("Feedback already submitted.");
+                    staffStatus.setForeground(DS.FG_GREEN);
+                    staffAlreadySubmitted[0] = true;
+                } else {
+                    staffFbArea.setEnabled(true); staffFbArea.setText(""); staffFbArea.setForeground(DS.FG_LABEL);
+                    staffRatingBox.setEnabled(true); staffRatingBox.setSelectedIndex(0);
+                    staffStatus.setText(" ");
+                    staffAlreadySubmitted[0] = false;
+                }
+
+                submitFb.setEnabled(!techAlreadySubmitted[0] || !staffAlreadySubmitted[0]);
+                if (techAlreadySubmitted[0] && staffAlreadySubmitted[0]) {
+                    fbHint.setText("You have already submitted all feedback for this appointment.");
+                    fbHint.setForeground(DS.FG_GREEN);
                 }
             }
         });
 
         submitFb.addActionListener(e -> {
-            if (fbArea.getText().trim().isEmpty()) { dlgWarn("Please enter a comment."); return; }
-            if (ratingBox.getSelectedIndex() == 0) { dlgWarn("Please select a rating."); return; }
-            boolean ok = feedbackDAO.submitFeedback(selID[0], customerID,
-                String.valueOf(ratingBox.getSelectedIndex()), fbArea.getText().trim());
-            if (ok) {
-                dlgInfo("Thank you for your feedback!");
-                fbArea.setEnabled(false); ratingBox.setEnabled(false); submitFb.setEnabled(false);
-                fbHint.setText("You have already submitted feedback for this appointment.");
+            boolean anySubmitted = false;
+            boolean anyFailed   = false;
+
+            // ── Submit technician feedback if filled ──
+            if (!techAlreadySubmitted[0]) {
+                String techComment = techFbArea.getText().trim();
+                int techRating = techRatingBox.getSelectedIndex();
+                if (!techComment.isEmpty() && techRating > 0) {
+                    boolean ok = feedbackDAO.submitFeedback(selID[0], customerID,
+                            "TECHNICIAN", selTechID[0],
+                            String.valueOf(techRating), techComment);
+                    if (ok) {
+                        techFbArea.setEnabled(false); techRatingBox.setEnabled(false);
+                        techStatus.setText("Feedback already submitted.");
+                        techStatus.setForeground(DS.FG_GREEN);
+                        techAlreadySubmitted[0] = true;
+                        anySubmitted = true;
+                    } else { anyFailed = true; }
+                }
+            }
+
+            if (!staffAlreadySubmitted[0]) {
+                String staffComment = staffFbArea.getText().trim();
+                int staffRating = staffRatingBox.getSelectedIndex();
+                if (!staffComment.isEmpty() && staffRating > 0) {
+                    boolean ok = feedbackDAO.submitFeedback(selID[0], customerID,
+                            "STAFF", selStaffID[0],
+                            String.valueOf(staffRating), staffComment);
+                    if (ok) {
+                        staffFbArea.setEnabled(false); staffRatingBox.setEnabled(false);
+                        staffStatus.setText("Feedback already submitted.");
+                        staffStatus.setForeground(DS.FG_GREEN);
+                        staffAlreadySubmitted[0] = true;
+                        anySubmitted = true;
+                    } else { anyFailed = true; }
+                }
+            }
+
+            if (!anySubmitted && !anyFailed) {
+                dlgWarn("Please fill in at least one feedback (rating + comment).");
+                return;
+            }
+            if (anyFailed) { dlgErr("Some feedback failed to submit. Please try again."); }
+            if (anySubmitted) { dlgInfo("Thank you for your feedback!"); }
+
+            if (techAlreadySubmitted[0] && staffAlreadySubmitted[0]) {
+                submitFb.setEnabled(false);
+                fbHint.setText("You have already submitted all feedback for this appointment.");
                 fbHint.setForeground(DS.FG_GREEN);
-            } else { dlgErr("Failed to submit. Please try again."); }
+            }
         });
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableScroll, feedbackSection);
@@ -774,9 +895,6 @@ public class CustomerPortal extends JFrame {
         return d;
     }
 
-    // =========================================================================
-    // PROFILE PAGE
-    // =========================================================================
     private JPanel buildProfilePage() {
         Color pageBg       = DS.BG_PAGE;
         Color cardBg       = DS.BG_CARD;
@@ -1418,7 +1536,6 @@ public class CustomerPortal extends JFrame {
         return p;
     }
 
-    // Dialogs
     private void dlgWarn(String msg)  { JOptionPane.showMessageDialog(this, msg, "Notice",  JOptionPane.WARNING_MESSAGE);     }
     private void dlgInfo(String msg)  { JOptionPane.showMessageDialog(this, msg, "Success", JOptionPane.INFORMATION_MESSAGE); }
     private void dlgErr(String msg)   { JOptionPane.showMessageDialog(this, msg, "Error",   JOptionPane.ERROR_MESSAGE);       }

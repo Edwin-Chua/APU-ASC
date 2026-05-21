@@ -60,14 +60,7 @@ public class AppointmentDAO {
                 }
 
                 String serviceTypeId   = p[3].trim();
-                String serviceTypeName;
-                if ("ST001".equals(serviceTypeId)) {
-                    serviceTypeName = "Normal Service";
-                } else if ("ST002".equals(serviceTypeId)) {
-                    serviceTypeName = "Major Service";
-                } else {
-                    serviceTypeName = serviceTypeId;
-                }
+                String serviceTypeName = resolveServiceTypeName(serviceTypeId, p[5].trim());
 
                 Appointment a = new Appointment(
                     p[0].trim(),       // appointmentID
@@ -99,6 +92,68 @@ public class AppointmentDAO {
         return s != null && s.matches("\\d{4}-\\d{2}-\\d{2}");
     }
 
+    /**
+     * 解析服务类型名称：
+     *  1. 先从 service_type.txt 按 serviceTypeId 查询
+     *  2. 若 serviceTypeId 无效，则从 service_items.txt 按 serviceItemId 反查 service_type_id，再查名称
+     *  3. 再找不到 → 返回 "Unknown Service"
+     */
+    private String resolveServiceTypeName(String serviceTypeId, String serviceItemId) {
+        // Step 1: 尝试从 service_type.txt 查 serviceTypeId
+        String name = lookupServiceTypeName(serviceTypeId);
+        if (name != null) return name;
+
+        // Step 2: serviceTypeId 无效，改用 serviceItemId 反查
+        if (serviceItemId != null && !serviceItemId.isEmpty()
+                && !"null".equalsIgnoreCase(serviceItemId)) {
+            String resolvedTypeId = lookupServiceTypeIdByItemId(serviceItemId);
+            name = lookupServiceTypeName(resolvedTypeId);
+            if (name != null) return name;
+        }
+
+        return "Unknown Service";
+    }
+
+    /** 从 service_type.txt 查名称，ID 无效返回 null */
+    private String lookupServiceTypeName(String id) {
+        if (id == null || id.isEmpty()
+                || "null".equalsIgnoreCase(id)
+                || "N/A".equalsIgnoreCase(id)) {
+            return null;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader("src/txtFiles/service_type.txt"))) {
+            String line;
+            boolean first = true;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || first) { first = false; continue; }
+                String[] parts = line.split("\\|", -1);
+                if (parts.length >= 2 && parts[0].trim().equalsIgnoreCase(id)) {
+                    return parts[1].trim();
+                }
+            }
+        } catch (IOException ignored) {}
+        return null;
+    }
+
+    /** 从 service_items.txt 通过 serviceItemId 找到其 service_type_id */
+    private String lookupServiceTypeIdByItemId(String itemId) {
+        try (BufferedReader br = new BufferedReader(new FileReader("src/txtFiles/service_items.txt"))) {
+            String line;
+            boolean first = true;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || first) { first = false; continue; }
+                String[] parts = line.split("\\|", -1);
+                // service_items.txt 格式: service_item_id|service_type_id|...
+                if (parts.length >= 2 && parts[0].trim().equalsIgnoreCase(itemId)) {
+                    return parts[1].trim();
+                }
+            }
+        } catch (IOException ignored) {}
+        return null;
+    }
+
     public Appointment getUpcomingAppointmentByCustomerID(String customerID) {
         LocalDate today = LocalDate.now();
         Appointment upcoming = null;
@@ -123,6 +178,8 @@ public class AppointmentDAO {
                 list.add(a);
             }
         }
+        // 按预约日期降序排列（最新的在最上面）
+        list.sort((a, b) -> b.getAppointmentDate().compareTo(a.getAppointmentDate()));
         return list;
     }
 
