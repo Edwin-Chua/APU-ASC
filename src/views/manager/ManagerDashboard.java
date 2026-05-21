@@ -61,11 +61,13 @@ public class ManagerDashboard extends BaseDashboard {
         btnReports   = UIComponent.createNavButton("Monthly Reports");
         btnProfile   = UIComponent.createNavButton("Profile");
 
-        btnEmployees.addActionListener(e -> navigate(btnEmployees, PAGE_EMPLOYEES));
-        btnServices.addActionListener(e  -> navigate(btnServices,  PAGE_SERVICES));
-        btnFeedbacks.addActionListener(e -> navigate(btnFeedbacks, PAGE_FEEDBACKS));
-        btnReports.addActionListener(e   -> navigate(btnReports,   PAGE_REPORTS));
-        btnProfile.addActionListener(e   -> navigate(btnProfile,   PAGE_PROFILE));
+
+        
+        btnEmployees.addActionListener(e -> { navigate(btnEmployees, PAGE_EMPLOYEES); employeesPage.loadData(); });
+        btnServices.addActionListener(e  -> { navigate(btnServices,  PAGE_SERVICES);  servicesPage.loadData();  });
+        btnFeedbacks.addActionListener(e -> { navigate(btnFeedbacks, PAGE_FEEDBACKS); feedbacksPage.loadData(); });
+        btnReports.addActionListener(e   -> { navigate(btnReports,   PAGE_REPORTS);   reportsPage.loadData();   });
+        btnProfile.addActionListener(e   -> { navigate(btnProfile,   PAGE_PROFILE);   profilePage.loadUser(frame.getLoggedInUser()); });
 
         navPanel.add(btnEmployees);
         navPanel.add(btnServices);

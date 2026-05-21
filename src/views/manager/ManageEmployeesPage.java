@@ -9,8 +9,10 @@ import views.shared.UIComponent;
 
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
+import javax.swing.plaf.LayerUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
@@ -433,45 +435,54 @@ public class ManageEmployeesPage extends JPanel {
         table.getColumnModel().getColumn(4).setCellEditor(new ActionsCellEditor());
 
         // ── Scroll pane — no scrollbars since pagination handles overflow ─────
-        JScrollPane scroll = UIComponent.createAppleScrollPane(table);
+        JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(true);
         scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setOpaque(true);
         scroll.getViewport().setBackground(AppTheme.BG_CARD);
-        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getViewport().setBorder(null);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        final int RADIUS = 16;
-        JPanel cardWrapper = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+        // ── Pull header out and place manually so corners clip cleanly ────────
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.setOpaque(true);
+        tableHeader.setBackground(AppTheme.BG_CARD);
+        scroll.setColumnHeader(null);
+
+        JPanel inner = new JPanel(new BorderLayout(0, 0));
+        inner.setOpaque(true);
+        inner.setBackground(AppTheme.BG_CARD);
+        inner.setBorder(BorderFactory.createEmptyBorder());
+        inner.add(tableHeader, BorderLayout.NORTH);
+        inner.add(scroll, BorderLayout.CENTER);
+
+        // ── JLayer clips everything to rounded rect and draws border on top ───
+        final int r = AppTheme.RADIUS_CARD * 2;
+        LayerUI<JPanel> cardLayerUI = new LayerUI<JPanel>() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Shadow-like subtle depth — thin outer border slightly darker
-                g2.setColor(new Color(0, 0, 0, 18));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, RADIUS, RADIUS);
-                // Card fill
                 g2.setColor(AppTheme.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), RADIUS, RADIUS);
-                // Border
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), r, r);
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, c.getWidth(), c.getHeight(), r, r));
+                super.paint(g2, c);
+                g2.setClip(null);
                 g2.setColor(AppTheme.SEPARATOR);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, RADIUS, RADIUS);
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, r, r);
                 g2.dispose();
             }
         };
-        cardWrapper.setOpaque(false);
-        cardWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // Inset the scroll pane so table content doesn't bleed over rounded corners
-        cardWrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // Clip the scroll pane viewport to match rounded corners
-        scroll.getViewport().addChangeListener(e -> scroll.repaint());
-        cardWrapper.add(scroll, BorderLayout.CENTER);
-
+        JLayer<JPanel> card = new JLayer<>(inner, cardLayerUI);
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
-        wrapper.add(cardWrapper, BorderLayout.CENTER);
+        wrapper.setBorder(BorderFactory.createEmptyBorder());
+        wrapper.add(card, BorderLayout.CENTER);
         return wrapper;
     }
 
@@ -856,8 +867,7 @@ public class ManageEmployeesPage extends JPanel {
         public Component getTableCellRendererComponent(JTable t, Object val,
                 boolean sel, boolean focus, int row, int col) {
             JPanel panel = buildActionsPanel(val instanceof ManageEmployee ? (ManageEmployee) val : null, false);
-            panel.setBackground(AppTheme.BG_CARD);
-            panel.setOpaque(true);
+            panel.setOpaque(false);
             return panel;
         }
     }

@@ -8,8 +8,10 @@ import views.shared.UIComponent;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.LayerUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -78,11 +80,7 @@ public class ServicePricesPage extends JPanel {
             body.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
         }
 
-        JScrollPane scroll = new JScrollPane(body);
-        scroll.setBorder(null);
-        scroll.getViewport().setBackground(AppTheme.BG_CONTENT);
-        scroll.getVerticalScrollBar().setUnitIncrement(14);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        JScrollPane scroll = UIComponent.createAppleScrollPane(body);
 
         loadData();
         return scroll;
@@ -193,24 +191,61 @@ public class ServicePricesPage extends JPanel {
         table.setCellSelectionEnabled(false);
         table.setFocusable(false);
 
+        // ── Track hovered row for hover highlight ────────────────────────────
+        final int[] hoveredRow = {-1};
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override public void mouseMoved(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                if (row != hoveredRow[0]) {
+                    hoveredRow[0] = row;
+                    table.repaint();
+                }
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                hoveredRow[0] = -1;
+                table.repaint();
+            }
+        });
+
+        // ── Modern default renderer: alternating rows + hover highlight ──────
+        final Color ROW_ODD    = AppTheme.BG_CARD;
+        final Color ROW_EVEN   = new Color(248, 248, 251);
+        final Color ROW_HOVER  = new Color(235, 242, 255);
+
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object val,
                     boolean sel, boolean focus, int row, int col) {
                 super.getTableCellRendererComponent(t, val, sel, focus, row, col);
-                setBackground(AppTheme.BG_CARD);
-                setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-                    new EmptyBorder(0, 14, 0, 8)
-                ));
+                setFont(AppTheme.FONT_SMALL);
+                setForeground(AppTheme.TEXT_PRIMARY);
+                boolean isHover = (row == hoveredRow[0]);
+                setBackground(isHover ? ROW_HOVER : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                setBorder(new EmptyBorder(0, 16, 0, 8));
                 return this;
             }
         });
 
-        table.getTableHeader().setFont(AppTheme.FONT_LABEL);
-        table.getTableHeader().setBackground(AppTheme.BG_PAGE);
-        table.getTableHeader().setForeground(AppTheme.TEXT_SECONDARY);
-        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR));
-        table.getTableHeader().setPreferredSize(new Dimension(0, 38));
+        // ── Modern header ────────────────────────────────────────────────────
+        table.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object val,
+                    boolean sel, boolean focus, int row, int col) {
+                JLabel lbl = new JLabel(val == null ? "" : val.toString().toUpperCase());
+                lbl.setFont(AppTheme.FONT_LABEL);
+                lbl.setForeground(AppTheme.TEXT_SECONDARY);
+                lbl.setBackground(new Color(245, 245, 248));
+                lbl.setOpaque(true);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
+                    new EmptyBorder(0, 16, 0, 8)
+                ));
+                lbl.setHorizontalAlignment(col == 3 ? SwingConstants.RIGHT : SwingConstants.LEFT);
+                return lbl;
+            }
+        });
+        table.getTableHeader().setBackground(new Color(245, 245, 248));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 40));
         table.getTableHeader().setReorderingAllowed(false);
         table.getTableHeader().setResizingAllowed(false);
 
@@ -221,18 +256,31 @@ public class ServicePricesPage extends JPanel {
         table.getColumnModel().getColumn(4).setPreferredWidth(120);  // Last Updated
         table.getColumnModel().getColumn(5).setPreferredWidth(160);  // Actions
 
-        // Muted style for ID column
+        // ── Muted monospace-style ID column ──────────────────────────────────
         table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object val,
                     boolean sel, boolean focus, int row, int col) {
                 super.getTableCellRendererComponent(t, val, sel, focus, row, col);
                 setFont(AppTheme.FONT_LABEL);
                 setForeground(AppTheme.TEXT_SECONDARY);
-                setBackground(AppTheme.BG_CARD);
-                setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-                    new EmptyBorder(0, 14, 0, 8)
-                ));
+                boolean isHover = (row == hoveredRow[0]);
+                setBackground(isHover ? ROW_HOVER : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                setBorder(new EmptyBorder(0, 16, 0, 8));
+                return this;
+            }
+        });
+
+        // ── Right-align Price column ──────────────────────────────────────────
+        table.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object val,
+                    boolean sel, boolean focus, int row, int col) {
+                super.getTableCellRendererComponent(t, val, sel, focus, row, col);
+                setFont(AppTheme.FONT_SMALL_BOLD);
+                setForeground(AppTheme.TEXT_PRIMARY);
+                setHorizontalAlignment(SwingConstants.RIGHT);
+                boolean isHover = (row == hoveredRow[0]);
+                setBackground(isHover ? ROW_HOVER : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                setBorder(new EmptyBorder(0, 8, 0, 16));
                 return this;
             }
         });
@@ -240,33 +288,54 @@ public class ServicePricesPage extends JPanel {
         table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
         table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor(table));
 
-        final int RADIUS = 16;
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(null);
-        scroll.setBackground(AppTheme.BG_CARD);
-        scroll.getViewport().setBackground(AppTheme.BG_CARD);
-        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        // ── Rounded card with clipped corners — same pattern as CounterStaff ──
+        final int r = AppTheme.RADIUS_CARD * 2;
 
-        JPanel card = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(true);
+        scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setBorder(null);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
+        // Pull the header out of the scroll pane and place it manually above
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.setOpaque(true);
+        tableHeader.setBackground(AppTheme.BG_CARD);
+        scroll.setColumnHeader(null);
+
+        JPanel inner = new JPanel(new BorderLayout(0, 0));
+        inner.setOpaque(true);
+        inner.setBackground(AppTheme.BG_CARD);
+        inner.setBorder(BorderFactory.createEmptyBorder());
+        inner.add(tableHeader, BorderLayout.NORTH);
+        inner.add(scroll, BorderLayout.CENTER);
+
+        LayerUI<JPanel> cardLayerUI = new LayerUI<JPanel>() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(AppTheme.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), RADIUS, RADIUS);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), r, r);
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, c.getWidth(), c.getHeight(), r, r));
+                super.paint(g2, c);
+                g2.setClip(null);
                 g2.setColor(AppTheme.SEPARATOR);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, RADIUS, RADIUS);
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, r, r);
                 g2.dispose();
             }
         };
-        card.setOpaque(false);
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(scroll, BorderLayout.CENTER);
 
+        JLayer<JPanel> card = new JLayer<>(inner, cardLayerUI);
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        wrapper.setBorder(BorderFactory.createEmptyBorder());
         wrapper.add(card, BorderLayout.CENTER);
         return wrapper;
     }
@@ -510,7 +579,12 @@ public class ServicePricesPage extends JPanel {
     private class ActionRenderer implements javax.swing.table.TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object val,
                 boolean sel, boolean focus, int row, int col) {
-            return buildActionsPanel(val instanceof String[] ? (String[]) val : null, false, null);
+            JPanel panel = buildActionsPanel(val instanceof String[] ? (String[]) val : null, false, null);
+            // Match the alternating row background
+            Color rowBg = (row % 2 == 0) ? AppTheme.BG_CARD : new Color(248, 248, 251);
+            panel.setBackground(rowBg);
+            panel.setOpaque(true);
+            return panel;
         }
     }
 
@@ -535,7 +609,7 @@ public class ServicePricesPage extends JPanel {
 
     private JPanel buildActionsPanel(String[] item, boolean interactive, JTable table) {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG_CARD);
+        panel.setOpaque(false);  // let the row background show through
         if (item == null) return panel;
 
         JButton btnEdit   = makeActionButton("Edit",   false);
