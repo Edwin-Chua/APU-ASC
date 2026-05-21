@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TechnicianDAO {
-    private static final String FILE_PATH = "src/txtFiles/technicians.txt";
+    private static final String FILE_PATH = "src/txtFiles/technician.txt";
 
     public List<Technician> getAllTechnicianList() {
         List<Technician> techList = new ArrayList<>();

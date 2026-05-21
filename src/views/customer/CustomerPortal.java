@@ -746,7 +746,7 @@ public class CustomerPortal extends JFrame {
             selStaffID[0] = selAppt.getStaffID();
             String selStatus = selAppt.getStatus();
 
-            if (!"Completed".equalsIgnoreCase(selStatus)) {
+            if (!"Paid".equalsIgnoreCase(selStatus)) {
                 techFbArea.setEnabled(false); techFbArea.setText("");
                 techRatingBox.setEnabled(false); techRatingBox.setSelectedIndex(0);
                 staffFbArea.setEnabled(false); staffFbArea.setText("");
