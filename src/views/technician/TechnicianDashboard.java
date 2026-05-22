@@ -51,18 +51,20 @@ public class TechnicianDashboard extends BaseDashboard {
         btnViewAppointment  = UIComponent.createNavButton("View Appointment");
         btnServiceTask      = UIComponent.createNavButton("Service Task");
 
-        btnProfile.addActionListener(e ->
-            navigate(btnProfile, PAGE_PROFILE));
+
 
         btnViewAppointment.addActionListener(e ->
             navigate(btnViewAppointment, PAGE_VIEW_APPOINTMENT));
 
         btnServiceTask.addActionListener(e ->
         	navigate(btnServiceTask, PAGE_SERVICE_TASK)); // swap to PAGE_SERVICE_TASK when ready
+        
+        btnProfile.addActionListener(e ->
+        navigate(btnProfile, PAGE_PROFILE));
 
-        navPanel.add(btnProfile);
         navPanel.add(btnViewAppointment);
         navPanel.add(btnServiceTask);
+        navPanel.add(btnProfile);
 
         return buildSidebarShell("Technician", navPanel);
     }

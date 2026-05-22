@@ -617,8 +617,9 @@ public class CustomerPortal extends JFrame {
                     if (col == 3 && v != null) {
                         String s = v.toString();
                         setForeground("Completed".equals(s) ? DS.FG_GREEN
-                                    : "Cancelled".equals(s) ? DS.FG_RED : DS.FG_ORANGE);
-                    }
+                : "Paid".equals(s)      ? new Color(0, 120, 60)
+                : "Cancelled".equals(s) ? DS.FG_RED : DS.FG_ORANGE);
+}
                 }
                 return this;
             }
@@ -753,7 +754,7 @@ public class CustomerPortal extends JFrame {
                 staffRatingBox.setEnabled(false); staffRatingBox.setSelectedIndex(0);
                 submitFb.setEnabled(false);
                 techStatus.setText(" "); staffStatus.setText(" ");
-                fbHint.setText("Only completed appointments can be rated.");
+                fbHint.setText("You can only give your feedback after payment.");
                 fbHint.setForeground(DS.FG_ORANGE);
                 techAlreadySubmitted[0] = false;
                 staffAlreadySubmitted[0] = false;
