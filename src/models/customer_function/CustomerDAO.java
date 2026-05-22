@@ -9,8 +9,6 @@ public class CustomerDAO {
 
     private static final String FILE_PATH = "src/txtFiles/customer.txt";
 
-    // customer.txt format (row 1 = header, skip it):
-    // customer_id|password|customer_name|customer_email|customer_phone|status|register_date
 
     private Customer parseLine(String line) {
         String[] p = line.split("\\|", -1);
