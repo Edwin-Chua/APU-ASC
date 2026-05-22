@@ -56,16 +56,16 @@ public class UserDAO {
                 if (firstLine) { firstLine = false; continue; }
 
                 String[] p = line.split("\\|", -1);
-                if (p.length < 4) continue;
+                if (p.length < 5) continue;
 
                 String managerId   = p[0].trim();
                 String managerName = p[1].trim();
                 String fileEmail   = p[2].trim();
                 String filePass    = p[3].trim();
-
+                String createdDate = p[4].trim();
                 if (fileEmail.equalsIgnoreCase(email.trim()) && filePass.equals(password.trim())) {
                     return new User(managerId, managerName, filePass,
-                        null, fileEmail, "Manager", "Active", "");
+                        null, fileEmail, "Manager", "Active", createdDate);
                 }
             }
         } catch (IOException e) { e.printStackTrace(); }
@@ -138,10 +138,11 @@ public class UserDAO {
                 String staffName = p[1].trim();
                 String fileEmail = p[2].trim();
                 String filePass  = p[3].trim();
+                String createdDate = p[4].trim();
 
                 if (fileEmail.equalsIgnoreCase(email.trim()) && filePass.equals(password.trim())) {
                     return new User(staffId, staffName, filePass,
-                        null, fileEmail, "CounterStaff", "Active", "");
+                        null, fileEmail, "CounterStaff", "Active", createdDate);
                 }
             }
         } catch (IOException e) { e.printStackTrace(); }
@@ -215,10 +216,12 @@ public class UserDAO {
                 String fileEmail = p[2].trim();
                 String filePass  = p[3].trim();
                 String status    = p[4].trim();
+                String createdDate = p[5].trim();
+
 
                 if (fileEmail.equalsIgnoreCase(email.trim()) && filePass.equals(password.trim())) {
                     return new User(techId, techName, filePass,
-                        null, fileEmail, "Technician", status, "");
+                        null, fileEmail, "Technician", status, createdDate);
                 }
             }
         } catch (IOException e) { e.printStackTrace(); }
