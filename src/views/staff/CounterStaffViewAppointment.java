@@ -23,9 +23,10 @@ public class CounterStaffViewAppointment extends JPanel {
     private final TechnicianDAO  technicianDAO  = new TechnicianDAO();
 
     // ─── Toolbar ──────────────────────────────────────────────────────────────
-    private JComboBox<String> filterStatus;
+    private JTextField         searchField;
+    private JComboBox<String>  filterStatus;
     private UIComponent.DatePickerField filterDate;
-    private JLabel            countLabel;
+    private JLabel             countLabel;
 
     // ─── Table ────────────────────────────────────────────────────────────────
     private DefaultTableModel tableModel;
@@ -81,8 +82,8 @@ public class CounterStaffViewAppointment extends JPanel {
         p.setOpaque(false);
 
         JLabel title = UIComponent.createPageTitle("Appointment Management");
-        JLabel sub   = UIComponent.createCaptionLabel("View, Approve, Assign & Cancel Appointments");
-        sub.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        JLabel sub   = UIComponent.createCaptionLabel("View, approve, assign and cancel appointments");
+        sub.setBorder(BorderFactory.createEmptyBorder(3, 0, 0, 0));
 
         JPanel left = new JPanel();
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
@@ -91,7 +92,7 @@ public class CounterStaffViewAppointment extends JPanel {
         left.add(sub);
 
         p.add(left, BorderLayout.WEST);
-        p.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        p.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
         return p;
     }
 
@@ -114,49 +115,50 @@ public class CounterStaffViewAppointment extends JPanel {
         card.setLayout(new BorderLayout(0, 0));
         card.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // Toolbar
+        // Toolbar — single row: [search] [status] [date] [refresh]  |  count
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
         toolbar.setOpaque(false);
         toolbar.setBorder(BorderFactory.createEmptyBorder(
-            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD, 12, AppTheme.PADDING_CARD
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD, AppTheme.PADDING_CARD, AppTheme.PADDING_CARD
         ));
 
-        JPanel filterRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        filterRow.setOpaque(false);
+        // Search field — takes remaining width on the left
+        searchField = UIComponent.createTextField("🔍  Search by ID, Customer or Plate...");
+        searchField.setPreferredSize(new Dimension(180, 36));
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { loadTable(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { loadTable(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { loadTable(); }
+        });
 
-        JLabel lblFilter = new JLabel("Filter:");
-        lblFilter.setFont(AppTheme.FONT_SMALL);
-        lblFilter.setForeground(AppTheme.TEXT_SECONDARY);
+        // Filter controls — fixed width, sit to the right of the search field
+        JPanel filterRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        filterRow.setOpaque(false);
 
         filterStatus = UIComponent.createComboBox(new String[]{
             "All Status", "Pending", "Approved", "Completed", "Cancelled", "Rejected"
         });
-        filterStatus.setPreferredSize(new Dimension(140, 38));
-
-        JLabel lblDate = new JLabel("Date:");
-        lblDate.setFont(AppTheme.FONT_SMALL);
-        lblDate.setForeground(AppTheme.TEXT_SECONDARY);
+        filterStatus.setPreferredSize(new Dimension(140, 36));
+        filterStatus.setToolTipText("Filter by status");
+        filterStatus.addActionListener(e -> loadTable());
 
         filterDate = UIComponent.createDatePicker(null);
-        filterDate.setPreferredSize(new Dimension(120, 38));
+        filterDate.setPreferredSize(new Dimension(125, 36));
+        filterDate.setToolTipText("Filter by date");
+        filterDate.addDateChangeListener(d -> loadTable());
 
-        JButton btnFilter = UIComponent.createSmallButton("Filter");
-        btnFilter.setPreferredSize(new Dimension(72, 34));
-        btnFilter.addActionListener(e -> loadTable());
-
-        JButton btnRefresh = UIComponent.createSmallButton("↺ Refresh");
-        btnRefresh.setPreferredSize(new Dimension(95, 34));
+        JButton btnRefresh = UIComponent.createSmallButton("↺  Refresh");
+        btnRefresh.setPreferredSize(new Dimension(100, 34));
         btnRefresh.addActionListener(e -> {
+            searchField.setText("");
             filterStatus.setSelectedIndex(0);
             filterDate.setDate(null);
             loadTable();
         });
 
-        filterRow.add(lblFilter);
+        filterRow.add(searchField);
         filterRow.add(filterStatus);
-        filterRow.add(lblDate);
         filterRow.add(filterDate);
-        filterRow.add(btnFilter);
         filterRow.add(btnRefresh);
 
         countLabel = new JLabel("Loading...");
@@ -251,12 +253,12 @@ public class CounterStaffViewAppointment extends JPanel {
             if (!e.getValueIsAdjusting()) onRowSelected();
         });
 
-        JLabel statusBar = new JLabel(" Click a row to view details");
+        JLabel statusBar = new JLabel("  Select a row to view appointment details");
         statusBar.setFont(AppTheme.FONT_CAPTION);
         statusBar.setForeground(AppTheme.TEXT_MUTED);
         statusBar.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(6, 12, 6, 12)
+            BorderFactory.createEmptyBorder(5, 12, 5, 12)
         ));
         statusBar.setBackground(AppTheme.BG_PAGE);
         statusBar.setOpaque(true);
@@ -265,14 +267,14 @@ public class CounterStaffViewAppointment extends JPanel {
             if (!e2.getValueIsAdjusting()) {
                 int r = table.getSelectedRow();
                 statusBar.setText(r >= 0
-                    ? " Selected: Appointment " + tableModel.getValueAt(r, 0) + " — " + tableModel.getValueAt(r, 1)
-                    : " Click a row to view details");
+                    ? "  " + tableModel.getValueAt(r, 0) + "  ·  " + tableModel.getValueAt(r, 1) + "  ·  " + tableModel.getValueAt(r, 2)
+                    : "  Select a row to view appointment details");
             }
         });
 
         JScrollPane scroll = UIComponent.createAppleScrollPane(table);
         scroll.getViewport().setBackground(AppTheme.BG_CARD);
-        scroll.setPreferredSize(new Dimension(0, 220));
+        scroll.setPreferredSize(new Dimension(0, 210));
 
         card.add(toolbar,   BorderLayout.NORTH);
         card.add(scroll,    BorderLayout.CENTER);
@@ -292,25 +294,50 @@ public class CounterStaffViewAppointment extends JPanel {
         outer.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         outer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel sectionTitle = new JLabel("▼  Appointment Details");
-        sectionTitle.setFont(AppTheme.FONT_SMALL_BOLD);
-        sectionTitle.setForeground(AppTheme.TEXT_SECONDARY);
-        sectionTitle.setBorder(BorderFactory.createCompoundBorder(
+        JPanel sectionHeader = new JPanel(new BorderLayout());
+        sectionHeader.setOpaque(false);
+        sectionHeader.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
             BorderFactory.createEmptyBorder(10, AppTheme.PADDING_CARD, 10, AppTheme.PADDING_CARD)
         ));
-        outer.add(sectionTitle, BorderLayout.NORTH);
+
+        // Left accent bar + title in a row
+        JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        titleRow.setOpaque(false);
+
+        JPanel accentBar = new JPanel();
+        accentBar.setBackground(AppTheme.PRIMARY);
+        accentBar.setPreferredSize(new Dimension(3, 16));
+        accentBar.setOpaque(true);
+
+        JLabel sectionTitle = new JLabel("Appointment Details");
+        sectionTitle.setFont(AppTheme.FONT_SMALL_BOLD);
+        sectionTitle.setForeground(AppTheme.TEXT_PRIMARY);
+
+        titleRow.add(accentBar);
+        titleRow.add(sectionTitle);
+        sectionHeader.add(titleRow, BorderLayout.WEST);
+        outer.add(sectionHeader, BorderLayout.NORTH);
 
         // ── hint ──────────────────────────────────────────────────────────────
-        JPanel hintCard = new JPanel(new BorderLayout());
+        JPanel hintCard = new JPanel();
+        hintCard.setLayout(new BoxLayout(hintCard, BoxLayout.Y_AXIS));
         hintCard.setOpaque(false);
-        hintCard.setPreferredSize(new Dimension(0, 240));
-        JLabel hint = new JLabel(
-            "← Select an appointment from the table above to view its details.",
-            SwingConstants.CENTER);
+        hintCard.setPreferredSize(new Dimension(0, 200));
+
+        JLabel hintIcon = new JLabel("☰", SwingConstants.CENTER);
+        hintIcon.setFont(hintIcon.getFont().deriveFont(28f));
+        hintIcon.setForeground(AppTheme.TEXT_MUTED);
+        hintIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        hintIcon.setBorder(BorderFactory.createEmptyBorder(32, 0, 8, 0));
+
+        JLabel hint = new JLabel("Select an appointment from the table above to view its details", SwingConstants.CENTER);
         hint.setFont(AppTheme.FONT_SMALL);
         hint.setForeground(AppTheme.TEXT_MUTED);
-        hintCard.add(hint, BorderLayout.CENTER);
+        hint.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        hintCard.add(hintIcon);
+        hintCard.add(hint);
 
         // Build the three detail views
         JPanel pendingCard  = buildPendingCard();
@@ -364,42 +391,38 @@ public class CounterStaffViewAppointment extends JPanel {
         JPanel right = new JPanel();
         right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
         right.setOpaque(false);
-        right.setPreferredSize(new Dimension(340, 0));
+        right.setPreferredSize(new Dimension(320, 0));
 
-        // Technician combo
-        JPanel techBox = new JPanel(new BorderLayout());
-        techBox.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(AppTheme.BORDER_DEFAULT),
-            "Assign Available Technician",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            AppTheme.FONT_LABEL, AppTheme.TEXT_SECONDARY
-        ));
-        techBox.setOpaque(false);
-        techBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        // Technician combo — clean labelled section, no TitledBorder
+        JLabel techLabel = new JLabel("Assign Technician");
+        techLabel.setFont(AppTheme.FONT_SMALL_BOLD);
+        techLabel.setForeground(AppTheme.TEXT_SECONDARY);
+        techLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        techLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
 
         techCombo = UIComponent.createComboBox(new String[]{});
-        techBox.add(techCombo, BorderLayout.CENTER);
+        techCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        techCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Buttons
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 8, 0));
         btnRow.setOpaque(false);
-        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        btnRow.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnRow.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        btnApprove = UIComponent.createPrimaryButton("Approve");
-        btnReject  = UIComponent.createDangerButton("Reject");
-        btnApprove.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        btnApprove.setPreferredSize(new Dimension(140, 40));
-        btnReject.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        btnReject.setPreferredSize(new Dimension(140, 40));
+        btnApprove = UIComponent.createPrimaryButton("✔  Approve");
+        btnReject  = UIComponent.createDangerButton("✖  Reject");
+        btnApprove.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btnReject.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         btnApprove.addActionListener(e -> handleApprove());
         btnReject.addActionListener(e  -> handleReject());
 
         btnRow.add(btnApprove);
         btnRow.add(btnReject);
 
-        right.add(techBox);
+        right.add(techLabel);
+        right.add(techCombo);
         right.add(btnRow);
 
         card.add(right, BorderLayout.EAST);
@@ -437,30 +460,31 @@ public class CounterStaffViewAppointment extends JPanel {
         JPanel right = new JPanel();
         right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
         right.setOpaque(false);
-        right.setPreferredSize(new Dimension(340, 0));
+        right.setPreferredSize(new Dimension(320, 0));
 
         JPanel notice = new JPanel(new BorderLayout());
-        notice.setBackground(new Color(255, 248, 220));
+        notice.setBackground(new Color(255, 249, 230));
         notice.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 200, 80), 1, true),
+            BorderFactory.createLineBorder(new Color(240, 210, 100), 1, true),
             BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
-        notice.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        notice.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+        notice.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel noticeText = new JLabel(
-            "<html>This appointment is approved and a technician has been assigned.<br>"
-            + "Cancelling will free the technician automatically.</html>");
+            "<html><b>Approved</b> — Technician assigned.<br>"
+            + "<span style='color:#a07800'>Cancelling will free the technician automatically.</span></html>");
         noticeText.setFont(AppTheme.FONT_SMALL);
-        noticeText.setForeground(new Color(120, 90, 0));
+        noticeText.setForeground(new Color(100, 75, 0));
         notice.add(noticeText, BorderLayout.CENTER);
 
         JPanel btnRow = new JPanel(new GridLayout(1, 1));
         btnRow.setOpaque(false);
-        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        btnRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnRow.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         btnCancel = UIComponent.createDangerButton("✖  Cancel Appointment");
-        btnCancel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        btnCancel.setPreferredSize(new Dimension(200, 40));
+        btnCancel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         btnCancel.addActionListener(e -> handleCancel());
         btnRow.add(btnCancel);
 
@@ -498,17 +522,17 @@ public class CounterStaffViewAppointment extends JPanel {
         // Right: read-only notice
         JPanel right = new JPanel(new BorderLayout());
         right.setOpaque(false);
-        right.setPreferredSize(new Dimension(340, 0));
+        right.setPreferredSize(new Dimension(320, 0));
 
         JPanel noticeBox = new JPanel(new BorderLayout());
-        noticeBox.setBackground(new Color(240, 240, 245));
+        noticeBox.setBackground(new Color(245, 245, 250));
         noticeBox.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(AppTheme.BORDER_DEFAULT, 1, true),
-            BorderFactory.createEmptyBorder(14, 14, 14, 14)
+            BorderFactory.createEmptyBorder(12, 14, 12, 14)
         ));
         JLabel noticeText = new JLabel(
             "<html><b>View Only</b><br><br>"
-            + "This appointment is in a final state and<br>cannot be modified.</html>");
+            + "This appointment is in a final state<br>and cannot be modified.</html>");
         noticeText.setFont(AppTheme.FONT_SMALL);
         noticeText.setForeground(AppTheme.TEXT_SECONDARY);
         noticeBox.add(noticeText, BorderLayout.CENTER);
@@ -718,6 +742,9 @@ public class CounterStaffViewAppointment extends JPanel {
 
         String statusFilter = (String) filterStatus.getSelectedItem();
         String dateFilter   = filterDate.getText().trim();
+        String searchQuery  = searchField.getText().trim().toLowerCase();
+        // strip out the placeholder text if field is still showing hint
+        if (searchQuery.startsWith("search by")) searchQuery = "";
 
         // Normalise whatever the picker returns → yyyy-MM-dd for comparison
         String dateFilterISO = "";
@@ -754,15 +781,25 @@ public class CounterStaffViewAppointment extends JPanel {
                 || a.getAppointmentDate().equals(isoDate);
             if (!matchStatus || !matchDate) continue;
 
+            String customerName = resolveCustomerName(a.getCustomerId());
             String vehicle = a.getVehicleBrand() + " " + a.getVehicleModel()
                 + " (" + a.getVehiclePlate() + ")";
             String service = "ST001".equals(a.getServiceTypeId())
                 ? "Normal Service — 1hour"
                 : "Major Service — 3hours";
 
+            // Search: match Appt ID, Customer Name, or Vehicle Plate (case-insensitive)
+            if (!searchQuery.isEmpty()) {
+                boolean matchSearch =
+                    a.getAppointmentId().toLowerCase().contains(searchQuery)
+                    || customerName.toLowerCase().contains(searchQuery)
+                    || a.getVehiclePlate().toLowerCase().contains(searchQuery);
+                if (!matchSearch) continue;
+            }
+
             tableModel.addRow(new Object[]{
                 a.getAppointmentId(),
-                resolveCustomerName(a.getCustomerId()),
+                customerName,
                 service,
                 vehicle,
                 a.getAppointmentDate(),
@@ -805,28 +842,43 @@ public class CounterStaffViewAppointment extends JPanel {
         }
     }
 
-    // Build a consistent 2-column label/value grid
+    // Build a consistent 2-column label/value grid with row separators
     private JPanel buildInfoGrid(String[] fieldNames, JLabel[] valueLabels) {
         JPanel grid = new JPanel(new GridBagLayout());
         grid.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets  = new Insets(3, 0, 3, 16);
-        gbc.anchor  = GridBagConstraints.NORTHWEST;
-        gbc.fill    = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill   = GridBagConstraints.HORIZONTAL;
 
         for (int i = 0; i < fieldNames.length; i++) {
             JLabel lbl = new JLabel(fieldNames[i]);
             lbl.setFont(AppTheme.FONT_SMALL_BOLD);
             lbl.setForeground(AppTheme.TEXT_SECONDARY);
-            lbl.setPreferredSize(new Dimension(190, 20));
+            lbl.setPreferredSize(new Dimension(180, 26));
 
             valueLabels[i].setFont(AppTheme.FONT_SMALL);
             valueLabels[i].setForeground(AppTheme.TEXT_PRIMARY);
 
-            gbc.gridx = 0; gbc.gridy = i; gbc.weightx = 0;
+            gbc.gridx = 0; gbc.gridy = i * 2; gbc.weightx = 0;
+            gbc.insets = new Insets(i == 0 ? 0 : 10, 0, 2, 16);
             grid.add(lbl, gbc);
+
             gbc.gridx = 1; gbc.weightx = 1;
             grid.add(valueLabels[i], gbc);
+
+            // Separator line between rows (not after the last)
+            if (i < fieldNames.length - 1) {
+                JSeparator rowSep = new JSeparator(SwingConstants.HORIZONTAL);
+                rowSep.setForeground(AppTheme.SEPARATOR);
+                rowSep.setPreferredSize(new Dimension(0, 1));
+                GridBagConstraints sepGbc = new GridBagConstraints();
+                sepGbc.gridx = 0; sepGbc.gridy = i * 2 + 1;
+                sepGbc.gridwidth = 2;
+                sepGbc.fill    = GridBagConstraints.HORIZONTAL;
+                sepGbc.weightx = 1;
+                sepGbc.insets  = new Insets(6, 0, 0, 0);
+                grid.add(rowSep, sepGbc);
+            }
         }
         return grid;
     }

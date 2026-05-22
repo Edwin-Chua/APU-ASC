@@ -1,5 +1,5 @@
 appointment_id|customer_id|staff_id|service_type_id|technician_id|service_item_id|time_slot|appointment_date|status|vehicle_brand|vehicle_model|vehicle_plate|technician_feedback
-A001|C002|CS001|ST001|T001|SI001|10:00|2026-04-26|Completed|Toyota|Camry|VKU 4821|ezezez
+A001|C002|CS001|ST001|T001|SI001|10:00|2026-04-26|Paid|Toyota|Camry|VKU 4821|ezezez
 A002|C002|CS001|ST001|T002|SI002|14:00|2026-04-05|Approved|Toyota|Camry|VKU 4821|NULL
 A003|C002|CS002|ST001|T001|SI001|09:00|2026-02-10|Paid|Honda|Civic|WXY 1234|NULL
 A004|C002|CS002|ST001|T003|SI003|13:00|2026-01-15|Paid|Honda|Civic|WXY 1234|NULL

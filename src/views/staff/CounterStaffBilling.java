@@ -9,6 +9,8 @@ import views.MainFrame;
 import views.shared.AppTheme;
 import views.shared.UIComponent;
 
+import utils.ReceiptGenerator;
+
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
@@ -264,20 +266,33 @@ public class CounterStaffBilling extends JPanel {
                         formPanel.setVisible(false);
                         String apptId = tableModel.getValueAt(row, 0).toString();
                         Payment existingPayment = paymentDAO.getPaymentByAppointmentId(apptId);
-                        String info = "Appointment " + apptId + " has already been paid and cannot be reprocessed.";
-                        if (existingPayment != null) {
-                            info += String.format(
-                                "\n\nReceipt No : %s\nPayment ID : %s\nTotal Paid : RM %.2f\nMethod     : %s\nDate       : %s",
-                                existingPayment.getReceiptNo(),
-                                existingPayment.getPaymentId(),
-                                existingPayment.getTotalAmountDouble(),
-                                existingPayment.getPaymentMethod(),
-                                existingPayment.getPaymentDate()
-                            );
-                        }
-                        JOptionPane.showMessageDialog(
-                            CounterStaffBilling.this, info,
-                            "Already Paid", JOptionPane.INFORMATION_MESSAGE);
+
+                        String[][] infoRows = existingPayment == null ? null : new String[][]{
+                            {"Receipt No",  existingPayment.getReceiptNo()},
+                            {"Payment ID",  existingPayment.getPaymentId()},
+                            {"Total Paid",  String.format("RM %.2f", existingPayment.getTotalAmountDouble())},
+                            {"Method",      existingPayment.getPaymentMethod()},
+                            {"Date",        existingPayment.getPaymentDate()},
+                        };
+
+                        UIComponent.DialogAction[] actions = existingPayment == null
+                            ? new UIComponent.DialogAction[]{
+                                new UIComponent.DialogAction("Close", UIComponent.DialogActionStyle.OUTLINE, null)
+                              }
+                            : new UIComponent.DialogAction[]{
+                                new UIComponent.DialogAction("Close", UIComponent.DialogActionStyle.OUTLINE, null),
+                                new UIComponent.DialogAction("Generate Receipt", UIComponent.DialogActionStyle.PRIMARY,
+                                    () -> generateReceipt(existingPayment))
+                              };
+
+                        UIComponent.showDialog(
+                            CounterStaffBilling.this,
+                            "Payment Details",
+                            UIComponent.DialogType.INFO,
+                            "Appointment " + apptId + " has already been paid.",
+                            infoRows,
+                            actions);
+
                         apptTable.clearSelection();
                     } else {
                         openPaymentForm(row);
@@ -612,7 +627,7 @@ public class CounterStaffBilling extends JPanel {
             showError("Payment saved but appointment status could not be updated.");
         }
 
-        // Success dialog
+        // Success dialog with "Generate Receipt" option
         JPanel msg = new JPanel();
         msg.setLayout(new BoxLayout(msg, BoxLayout.Y_AXIS));
         msg.setOpaque(false);
@@ -640,8 +655,16 @@ public class CounterStaffBilling extends JPanel {
         msg.add(UIComponent.verticalGap(6));
         msg.add(l4);
 
-        JOptionPane.showMessageDialog(this, msg, "Payment Confirmed",
-            JOptionPane.INFORMATION_MESSAGE);
+        String[] options = {"Generate Receipt (PDF)", "Close"};
+        int choice = JOptionPane.showOptionDialog(
+                this, msg, "Payment Confirmed",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null, options, options[0]);
+
+        if (choice == 0) {
+            generateReceipt(payment);
+        }
 
         applyFilter();
 
@@ -649,6 +672,75 @@ public class CounterStaffBilling extends JPanel {
         amountField.setText("");
         additionalChargeField.setText("0.00");
         totalAmountLabel.setText("0.00");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Generate PDF Receipt
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Generates a PDF receipt for the given {@link Payment} and opens the
+     * containing folder in the system file manager.
+     *
+     * The receipt is saved to:  receipts/Receipt_<receiptNo>_<date>.pdf
+     * relative to the application working directory.
+     *
+     * @param payment The fully-populated Payment whose receipt is to be printed.
+     */
+    private void generateReceipt(Payment payment) {
+        // Resolve appointment data from the currently displayed list
+        Appointment appt = null;
+        for (Appointment a : displayedAppointments) {
+            if (a.getAppointmentId().equals(payment.getAppointmentId())) {
+                appt = a;
+                break;
+            }
+        }
+
+        // Fallback values when the appointment is no longer in displayedAppointments
+        String vehiclePlate    = appt != null ? appt.getVehiclePlate()    : payment.getAppointmentId();
+        String appointmentDate = appt != null ? appt.getAppointmentDate() : payment.getPaymentDate();
+        String serviceItemId   = appt != null ? appt.getServiceItemId()   : "—";
+        String serviceName     = models.dao.ServiceItemDAO.getServiceName(serviceItemId);
+
+        // customerId doubles as customer display name (replace with customer name lookup if available)
+        String customerDisplay = appt != null ? appt.getCustomerId() : "—";
+
+        String outputDir = "receipts";
+
+        try {
+            java.io.File pdf = ReceiptGenerator.generate(
+                    payment,
+                    customerDisplay,
+                    vehiclePlate,
+                    appointmentDate,
+                    serviceName,
+                    outputDir);
+
+            // Notify staff and offer to open the file
+            int open = JOptionPane.showConfirmDialog(
+                    this,
+                    "Receipt saved to:\n" + pdf.getAbsolutePath() + "\n\nOpen the file now?",
+                    "Receipt Generated",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            if (open == JOptionPane.YES_OPTION) {
+                try {
+                    java.awt.Desktop.getDesktop().open(pdf);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this,
+                            "Could not open the file automatically.\nPlease navigate to:\n" + pdf.getAbsolutePath(),
+                            "Open File", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Failed to generate receipt PDF:\n" + ex.getMessage(),
+                    "Receipt Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showError(String message) {

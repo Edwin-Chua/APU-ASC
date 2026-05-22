@@ -1125,4 +1125,207 @@ public final class UIComponent {
         }
     }
 
+    // ─── App Dialog ───────────────────────────────────────────────────────────
+
+    /**
+     * A reusable styled dialog consistent with AppTheme.
+     *
+     * Quick usage examples:
+     *
+     *   // 1. Info dialog — just a message
+     *   UIComponent.showDialog(this, "Already Paid",
+     *       UIComponent.DialogType.INFO,
+     *       "Appointment A001 has already been paid.",
+     *       null, null);
+     *
+     *   // 2. Dialog with info rows (e.g. payment summary)
+     *   String[][] rows = {
+     *       {"Receipt No", "RCP1001"},
+     *       {"Total Paid", "RM 150.00"},
+     *   };
+     *   UIComponent.showDialog(this, "Payment Details",
+     *       UIComponent.DialogType.INFO,
+     *       "Appointment A001 has already been paid.",
+     *       rows, null);
+     *
+     *   // 3. Dialog with info rows AND custom action buttons
+     *   UIComponent.showDialog(this, "Payment Details",
+     *       UIComponent.DialogType.INFO,
+     *       "Appointment A001 has already been paid.",
+     *       rows,
+     *       new UIComponent.DialogAction[]{
+     *           new UIComponent.DialogAction("Generate Receipt", UIComponent.DialogActionStyle.PRIMARY, () -> generateReceipt()),
+     *           new UIComponent.DialogAction("Close",           UIComponent.DialogActionStyle.OUTLINE,  null),
+     *       });
+     *
+     *   // 4. Success / warning / danger variants
+     *   UIComponent.showDialog(this, "Deleted",   UIComponent.DialogType.DANGER,  "Record deleted.", null, null);
+     *   UIComponent.showDialog(this, "Saved",     UIComponent.DialogType.SUCCESS, "Changes saved.", null, null);
+     *   UIComponent.showDialog(this, "Warning",   UIComponent.DialogType.WARNING, "Check your input.", null, null);
+     */
+    public enum DialogType    { INFO, SUCCESS, WARNING, DANGER }
+    public enum DialogActionStyle { PRIMARY, OUTLINE, DANGER }
+
+    /** Represents one button in the dialog footer. */
+    public static class DialogAction {
+        public final String      label;
+        public final DialogActionStyle style;
+        public final Runnable    action; // null = just close
+
+        public DialogAction(String label, DialogActionStyle style, Runnable action) {
+            this.label  = label;
+            this.style  = style;
+            this.action = action;
+        }
+    }
+
+    /**
+     * Show a fully styled modal dialog.
+     *
+     * @param parent   Any component in the window (used to find the owner Window).
+     * @param title    Dialog title shown in the header.
+     * @param type     INFO / SUCCESS / WARNING / DANGER — controls accent colour and icon.
+     * @param message  Optional caption shown below the title. Pass null to omit.
+     * @param rows     Optional label-value pairs shown as info rows. Pass null to omit.
+     * @param actions  Optional footer buttons. Pass null for a default "Close" button.
+     */
+    public static void showDialog(
+            Component        parent,
+            String           title,
+            DialogType       type,
+            String           message,
+            String[][]       rows,
+            DialogAction[]   actions) {
+
+        Window owner = SwingUtilities.getWindowAncestor(parent);
+        JDialog dialog = new JDialog(owner, title, java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0, 0, 0, 0));
+
+        // ── Accent colour by type ─────────────────────────────────────────────
+        Color accent;
+        String icon;
+        switch (type) {
+            case SUCCESS: accent = AppTheme.SUCCESS; icon = "✓"; break;
+            case WARNING: accent = AppTheme.WARNING; icon = "!"; break;
+            case DANGER:  accent = AppTheme.DANGER;  icon = "✕"; break;
+            default:      accent = AppTheme.PRIMARY; icon = "i"; break;
+        }
+
+        // ── Root rounded card ─────────────────────────────────────────────────
+        JPanel root = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.BG_CARD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.setColor(AppTheme.BORDER_CARD);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
+                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.dispose();
+            }
+        };
+        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
+        root.setOpaque(false);
+        root.setBorder(BorderFactory.createEmptyBorder(
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD,
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD));
+
+        // ── Header: icon circle + title ───────────────────────────────────────
+        JPanel headerRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        headerRow.setOpaque(false);
+        headerRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        headerRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+
+        // Accent circle icon
+        final Color accentFinal = accent;
+        final String iconFinal  = icon;
+        JLabel iconLabel = new JLabel(iconFinal, SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // faint tinted circle
+                Color tint = new Color(accentFinal.getRed(), accentFinal.getGreen(),
+                                       accentFinal.getBlue(), 22);
+                g2.setColor(tint);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        iconLabel.setFont(AppTheme.FONT_SMALL_BOLD);
+        iconLabel.setForeground(accent);
+        iconLabel.setOpaque(false);
+        iconLabel.setPreferredSize(new Dimension(32, 32));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(AppTheme.FONT_BODY_BOLD);
+        titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
+
+        headerRow.add(iconLabel);
+        headerRow.add(titleLabel);
+        root.add(headerRow);
+
+        // ── Message caption ───────────────────────────────────────────────────
+        if (message != null && !message.isEmpty()) {
+            root.add(verticalGap(6));
+            JLabel msgLabel = createCaptionLabel(message);
+            msgLabel.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // indent under icon
+            msgLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            msgLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            root.add(msgLabel);
+        }
+
+        // ── Info rows card ────────────────────────────────────────────────────
+        if (rows != null && rows.length > 0) {
+            root.add(verticalGap(AppTheme.GAP_ITEM));
+            JPanel card = createCard();
+            card.setAlignmentX(Component.LEFT_ALIGNMENT);
+            card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+            for (int i = 0; i < rows.length; i++) {
+                card.add(createInfoRow(rows[i][0], rows[i][1]));
+                if (i < rows.length - 1) card.add(createRowDivider());
+            }
+            root.add(card);
+        }
+
+        root.add(verticalGap(AppTheme.GAP_SECTION));
+
+        // ── Footer buttons ────────────────────────────────────────────────────
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.GAP_ITEM, 0));
+        btnRow.setOpaque(false);
+        btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+
+        DialogAction[] effectiveActions = (actions != null && actions.length > 0)
+            ? actions
+            : new DialogAction[]{new DialogAction("Close", DialogActionStyle.OUTLINE, null)};
+
+        for (DialogAction da : effectiveActions) {
+            JButton btn;
+            switch (da.style) {
+                case PRIMARY: btn = createPrimaryButton(da.label); break;
+                case DANGER:  btn = createDangerButton(da.label);  break;
+                default:      btn = createOutlineButton(da.label); break;
+            }
+            btn.setPreferredSize(AppTheme.BUTTON_SM);
+            btn.setMaximumSize(AppTheme.BUTTON_SM);
+            final Runnable act = da.action;
+            btn.addActionListener(e -> {
+                dialog.dispose();
+                if (act != null) act.run();
+            });
+            btnRow.add(btn);
+        }
+
+        root.add(btnRow);
+
+        dialog.setContentPane(root);
+        dialog.pack();
+        dialog.setMinimumSize(new Dimension(420, dialog.getHeight()));
+        dialog.setLocationRelativeTo(owner);
+        dialog.setVisible(true);
+    }
+
 }
