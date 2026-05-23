@@ -291,7 +291,7 @@ public class CustomerRegisterPage extends JPanel {
         }
 
         JOptionPane.showMessageDialog(frame,
-                "Account created successfully.\nStatus: Pending - manager approval required before login.",
+                "Account created successfully.\nStatus: Pending - staff approval required before login.",
                 "Registration Successful", JOptionPane.INFORMATION_MESSAGE);
 
         clearFields();
