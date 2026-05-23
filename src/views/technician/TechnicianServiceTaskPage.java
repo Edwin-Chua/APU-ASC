@@ -6,7 +6,7 @@ import models.entities.User;
 import views.MainFrame;
 import views.shared.AppTheme;
 import views.shared.UIComponent;
-
+import models.dao.ServiceItemDAO;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -156,7 +156,7 @@ public class TechnicianServiceTaskPage extends JPanel {
             "Customer: " + a.getCustomerId() + "<br>" +
             "Vehicle: " + a.getVehicleBrand() + " " + a.getVehicleModel() + "<br>" +
             "Plate: " + a.getVehiclePlate() + "<br>" +
-            "Service Item: " + a.getServiceItemId() +
+            "Service Item: " + ServiceItemDAO.getServiceName(a.getServiceItemId()) +
             "</html>"
         );
     }
