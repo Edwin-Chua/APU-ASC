@@ -6,3 +6,7 @@ FB004|A012|C001|TECHNICIAN|T001|too bad|1|2026-05-21
 FB005|A012|C001|STAFF|CS001|mehh|2|2026-05-21
 FB006|A024|C001|TECHNICIAN|T001|999|1|2026-05-21
 FB007|A024|C001|STAFF|CS001|666|2|2026-05-21
+FB008|A004|C001|TECHNICIAN|T002|nice, it wont have the issue anymore|4|2026-05-24
+FB009|A004|C001|STAFF|CS001|counter staff are patient|4|2026-05-24
+FB010|A006|C003|TECHNICIAN|T001|the technician is poor, my car had the same problem next day, wont come back anymore|1|2026-05-24
+FB011|A009|C001|STAFF|CS001|bad customer service, he scold me for being annoyed|1|2026-05-24
