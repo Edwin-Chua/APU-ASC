@@ -1170,12 +1170,18 @@ public final class UIComponent {
     public static class DialogAction {
         public final String      label;
         public final DialogActionStyle style;
-        public final Runnable    action; // null = just close
+        public final Runnable    action;     // null = just close
+        public final Dimension   buttonSize; // null = default BUTTON_SM
 
         public DialogAction(String label, DialogActionStyle style, Runnable action) {
-            this.label  = label;
-            this.style  = style;
-            this.action = action;
+            this(label, style, action, null);
+        }
+
+        public DialogAction(String label, DialogActionStyle style, Runnable action, Dimension buttonSize) {
+            this.label      = label;
+            this.style      = style;
+            this.action     = action;
+            this.buttonSize = buttonSize;
         }
     }
 
@@ -1309,8 +1315,9 @@ public final class UIComponent {
                 case DANGER:  btn = createDangerButton(da.label);  break;
                 default:      btn = createOutlineButton(da.label); break;
             }
-            btn.setPreferredSize(AppTheme.BUTTON_SM);
-            btn.setMaximumSize(AppTheme.BUTTON_SM);
+            Dimension sz = (da.buttonSize != null) ? da.buttonSize : AppTheme.BUTTON_SM;
+            btn.setPreferredSize(sz);
+            btn.setMaximumSize(sz);
             final Runnable act = da.action;
             btn.addActionListener(e -> {
                 dialog.dispose();

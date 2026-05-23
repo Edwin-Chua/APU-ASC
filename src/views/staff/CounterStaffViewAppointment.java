@@ -122,9 +122,48 @@ public class CounterStaffViewAppointment extends JPanel {
             AppTheme.PADDING_CARD, AppTheme.PADDING_CARD, AppTheme.PADDING_CARD, AppTheme.PADDING_CARD
         ));
 
-        // Search field — takes remaining width on the left
-        searchField = UIComponent.createTextField("🔍  Search by ID, Customer or Plate...");
-        searchField.setPreferredSize(new Dimension(180, 36));
+        // Search field — same custom-painted rounded style as ManageEmployeesPage
+        final String SEARCH_PLACEHOLDER = "🔍  Search by ID, Customer or Plate";
+        searchField = new JTextField() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 22, 22);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0, 0, 0, 50));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 22, 22);
+                g2.dispose();
+            }
+        };
+        searchField.putClientProperty("caretWidth", 2);
+        searchField.setFont(AppTheme.FONT_SMALL);
+        searchField.setForeground(AppTheme.TEXT_MUTED);
+        searchField.setBackground(AppTheme.BG_CARD);
+        searchField.setOpaque(false);
+        searchField.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 14));
+        searchField.setPreferredSize(new Dimension(240, 38));
+        searchField.setText(SEARCH_PLACEHOLDER);
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals(SEARCH_PLACEHOLDER)) {
+                    searchField.setText("");
+                    searchField.setForeground(AppTheme.TEXT_PRIMARY);
+                }
+            }
+            @Override public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(SEARCH_PLACEHOLDER);
+                    searchField.setForeground(AppTheme.TEXT_MUTED);
+                }
+            }
+        });
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e)  { loadTable(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e)  { loadTable(); }
@@ -150,7 +189,8 @@ public class CounterStaffViewAppointment extends JPanel {
         JButton btnRefresh = UIComponent.createSmallButton("↺  Refresh");
         btnRefresh.setPreferredSize(new Dimension(100, 34));
         btnRefresh.addActionListener(e -> {
-            searchField.setText("");
+            searchField.setText(SEARCH_PLACEHOLDER);
+            searchField.setForeground(AppTheme.TEXT_MUTED);
             filterStatus.setSelectedIndex(0);
             filterDate.setDate(null);
             loadTable();
@@ -742,9 +782,8 @@ public class CounterStaffViewAppointment extends JPanel {
 
         String statusFilter = (String) filterStatus.getSelectedItem();
         String dateFilter   = filterDate.getText().trim();
-        String searchQuery  = searchField.getText().trim().toLowerCase();
-        // strip out the placeholder text if field is still showing hint
-        if (searchQuery.startsWith("search by")) searchQuery = "";
+        String searchRaw   = searchField.getText().trim();
+        String searchQuery = (searchRaw.startsWith("🔍") || searchRaw.isEmpty()) ? "" : searchRaw.toLowerCase();
 
         // Normalise whatever the picker returns → yyyy-MM-dd for comparison
         String dateFilterISO = "";

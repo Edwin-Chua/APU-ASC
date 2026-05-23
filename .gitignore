@@ -26,3 +26,4 @@ replay_pid*
 /bin/
 receipts/Receipt_RCP1002_2026-01-15.html
 .classpath
+*.html

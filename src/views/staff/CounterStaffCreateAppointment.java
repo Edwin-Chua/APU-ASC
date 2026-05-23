@@ -11,13 +11,15 @@ import views.shared.AppTheme;
 import views.shared.UIComponent;
 
 import javax.swing.*;
+import javax.swing.plaf.LayerUI;
 import javax.swing.table.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class CounterStaffCreateAppointment extends JPanel {
@@ -44,12 +46,10 @@ public class CounterStaffCreateAppointment extends JPanel {
     // ─── Right panel ──────────────────────────────────────────────────────────
     private JPanel techStatusPanel;
     private JPanel slotsPanel;
-    private JLabel slotsDateLabel; // shows which date the slots reflect
+    private JLabel slotsDateLabel;
 
-    // staff ID injected from dashboard
     private String staffId = "CS001";
 
-    // time slots offered
     private static final String[] TIME_SLOTS = {
         "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
         "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
@@ -60,20 +60,17 @@ public class CounterStaffCreateAppointment extends JPanel {
         setBackground(AppTheme.BG_PAGE);
         setBorder(BorderFactory.createEmptyBorder(
             AppTheme.PADDING_PAGE, AppTheme.PADDING_PAGE,
-            AppTheme.PADDING_PAGE, AppTheme.PADDING_PAGE
-        ));
+            AppTheme.PADDING_PAGE, AppTheme.PADDING_PAGE));
 
         add(buildHeader(), BorderLayout.NORTH);
 
         JPanel body = new JPanel(new BorderLayout(16, 0));
         body.setOpaque(false);
-
         body.add(buildFormPanel(),  BorderLayout.CENTER);
         body.add(buildRightPanel(), BorderLayout.EAST);
         add(body, BorderLayout.CENTER);
 
         wireListeners();
-
         populateCustomerCombo();
         refreshTechStatus();
 
@@ -89,11 +86,9 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
-
         JLabel title = UIComponent.createPageTitle("Create Appointment");
         JLabel sub   = UIComponent.createCaptionLabel("Walk-In / Telephone Booking Form");
         sub.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
-
         JPanel left = new JPanel();
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
         left.setOpaque(false);
@@ -108,7 +103,6 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         p.setOpaque(false);
-
         p.add(buildStep1());
         p.add(Box.createRigidArea(new Dimension(0, 12)));
         p.add(buildStep2());
@@ -116,53 +110,78 @@ public class CounterStaffCreateAppointment extends JPanel {
         p.add(buildStep3());
         p.add(Box.createRigidArea(new Dimension(0, 12)));
         p.add(buildConfirmButton());
-
         return p;
     }
 
-    // ─── Step 1 — Customer Selection ──────────────────────────────────────────
+    private JTextField createRoundedField(String placeholder) {
+        JTextField field = new JTextField() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 22, 22);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0, 0, 0, 50));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 22, 22);
+                g2.dispose();
+            }
+        };
+        field.putClientProperty("caretWidth", 2);
+        field.setFont(AppTheme.FONT_SMALL);
+        field.setForeground(AppTheme.TEXT_MUTED);
+        field.setBackground(AppTheme.BG_CARD);
+        field.setOpaque(false);
+        field.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 14));
+        field.setText(placeholder);
+        field.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) {
+                if (field.getText().equals(placeholder)) { field.setText(""); field.setForeground(AppTheme.TEXT_PRIMARY); }
+            }
+            @Override public void focusLost(FocusEvent e) {
+                if (field.getText().trim().isEmpty()) { field.setText(placeholder); field.setForeground(AppTheme.TEXT_MUTED); }
+            }
+        });
+        return field;
+    }
+
+    // ─── Step 1 ───────────────────────────────────────────────────────────────
     private JPanel buildStep1() {
         JPanel card = createStepCard();
-
         JPanel custRow = new JPanel(new BorderLayout(8, 0));
         custRow.setOpaque(false);
-
         customerCombo = UIComponent.createComboBox(new String[0]);
         customerCombo.setPreferredSize(new Dimension(0, 38));
-
         JButton btnSearch = UIComponent.createSmallButton("Search");
         btnSearch.setPreferredSize(new Dimension(90, 36));
         btnSearch.addActionListener(e -> showCustomerSearch());
-
         custRow.add(customerCombo, BorderLayout.CENTER);
         custRow.add(btnSearch,     BorderLayout.EAST);
-
-        vehicleField      = UIComponent.createTextField("e.g. WXY-1234");
-        vehicleBrandField = UIComponent.createTextField("e.g. Toyota");
-        vehicleModelField = UIComponent.createTextField("e.g. Camry");
-
+        vehicleField      = createRoundedField("e.g. WXY-1234");
+        vehicleBrandField = createRoundedField("e.g. Toyota");
+        vehicleModelField = createRoundedField("e.g. Camry");
         addFormRow(card, "Select Registered Customer *", custRow);
         addFormRow(card, "Vehicle Plate No. *",           vehicleField);
         addFormRow(card, "Vehicle Brand *",               vehicleBrandField);
         addFormRow(card, "Vehicle Model *",               vehicleModelField);
-
         return wrapCard(card, "Step 1 — Customer Selection");
     }
 
-    // ─── Step 2 — Service & Schedule ──────────────────────────────────────────
+    // ─── Step 2 ───────────────────────────────────────────────────────────────
     private JPanel buildStep2() {
         JPanel card = createStepCard();
-
         serviceItemCombo = UIComponent.createComboBox(new String[0]);
         serviceItemCombo.setPreferredSize(new Dimension(0, 38));
         populateServiceItems();
-
         dateField = UIComponent.createDatePicker(LocalDate.now());
         dateField.setPreferredSize(new Dimension(110, 38));
-
         timeSlotCombo = UIComponent.createComboBox(TIME_SLOTS);
         timeSlotCombo.setPreferredSize(new Dimension(140, 38));
-
         JPanel dateTimeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         dateTimeRow.setOpaque(false);
         JLabel timeLbl = new JLabel("  Time Slot *  ");
@@ -171,10 +190,8 @@ public class CounterStaffCreateAppointment extends JPanel {
         dateTimeRow.add(dateField);
         dateTimeRow.add(timeLbl);
         dateTimeRow.add(timeSlotCombo);
-
         addFormRow(card, "Service Item *",     serviceItemCombo);
         addFormRow(card, "Appointment Date *", dateTimeRow);
-
         return wrapCard(card, "Step 2 — Service & Schedule");
     }
 
@@ -182,38 +199,31 @@ public class CounterStaffCreateAppointment extends JPanel {
         serviceItemCombo.removeAllItems();
         serviceItemCombo.addItem("-- Select Service Item --");
         for (String[] item : ServiceItemDAO.getAllServiceItems()) {
-            String type = item[1].equals("ST001") ? "Normal" : "Major"; // col 1 = service_type_id
-            serviceItemCombo.addItem(item[0] + " — " + item[2] + " (" + type + ")"); // col 2 = service_name
+            String type = item[1].equals("ST001") ? "Normal" : "Major";
+            serviceItemCombo.addItem(item[0] + " — " + item[2] + " (" + type + ")");
         }
     }
 
-    // ─── Step 3 — Assign Technician ───────────────────────────────────────────
+    // ─── Step 3 ───────────────────────────────────────────────────────────────
     private JPanel buildStep3() {
         JPanel card = createStepCard();
-
         techCombo = UIComponent.createComboBox(new String[0]);
         techCombo.setEnabled(false);
         techCombo.setPreferredSize(new Dimension(0, 38));
         techCombo.setToolTipText("Select a service item, date, and time slot first");
-
         btnViewSchedule = UIComponent.createSmallButton("View Schedule");
         btnViewSchedule.setEnabled(false);
         btnViewSchedule.setPreferredSize(new Dimension(130, 36));
         btnViewSchedule.setToolTipText("Select a service item, date, and time slot first");
         btnViewSchedule.addActionListener(e -> showTechSchedule());
-
         JPanel techRow = new JPanel(new BorderLayout(8, 0));
         techRow.setOpaque(false);
         techRow.add(techCombo,       BorderLayout.CENTER);
         techRow.add(btnViewSchedule, BorderLayout.EAST);
-
         addFormRow(card, "Assign Technician *", techRow);
-
-        // UI-only notes area — not stored
         JTextArea notesArea = UIComponent.createTextArea("Optional instructions or remarks...", 3);
         notesArea.setLineWrap(true);
         notesArea.setWrapStyleWord(true);
-
         JScrollPane notesScroll = new JScrollPane(notesArea) {
             @Override public Dimension getPreferredSize() { return new Dimension(super.getPreferredSize().width, 80); }
             @Override public Dimension getMinimumSize()   { return new Dimension(0, 80); }
@@ -223,27 +233,21 @@ public class CounterStaffCreateAppointment extends JPanel {
         notesScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         notesScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         notesScroll.getViewport().setBackground(AppTheme.BG_FIELD);
-
         addFormRow(card, "Additional Notes", notesScroll);
-
         return wrapCard(card, "Step 3 — Assign Technician");
     }
 
     // ─── Confirm button ───────────────────────────────────────────────────────
     private JPanel buildConfirmButton() {
         JButton btnConfirm = new JButton("Confirm Appointment") {
-        	
             private boolean hovered = false;
-
             {
-                addMouseListener(new java.awt.event.MouseAdapter() {
-                    @Override public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true;  repaint(); }
-                    @Override public void mouseExited (java.awt.event.MouseEvent e) { hovered = false; repaint(); }
+                addMouseListener(new MouseAdapter() {
+                    @Override public void mouseEntered(MouseEvent e) { hovered = true;  repaint(); }
+                    @Override public void mouseExited (MouseEvent e) { hovered = false; repaint(); }
                 });
             }
-
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(hovered ? AppTheme.PRIMARY_HOVER : AppTheme.PRIMARY);
@@ -251,18 +255,15 @@ public class CounterStaffCreateAppointment extends JPanel {
                 g2.dispose();
                 super.paintComponent(g);
             }
-
-            @Override
-            protected void paintBorder(Graphics g) {
+            @Override protected void paintBorder(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(hovered ? AppTheme.PRIMARY_HOVER : AppTheme.PRIMARY);
-                g2.setStroke(new java.awt.BasicStroke(2.5f));
+                g2.setStroke(new BasicStroke(2.5f));
                 g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 36, 36);
                 g2.dispose();
             }
         };
-
         btnConfirm.setFont(new Font(AppTheme.FONT_SMALL_BOLD.getName(), Font.BOLD, 14));
         btnConfirm.setForeground(Color.WHITE);
         btnConfirm.setContentAreaFilled(false);
@@ -272,7 +273,6 @@ public class CounterStaffCreateAppointment extends JPanel {
         btnConfirm.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnConfirm.setPreferredSize(new Dimension(0, 38));
         btnConfirm.addActionListener(e -> handleConfirm());
-
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -283,7 +283,7 @@ public class CounterStaffCreateAppointment extends JPanel {
         return wrapper;
     }
 
-    // ─── Right panel (Technician Status + Today's Slots) ─────────────────────
+    // ─── Right panel ──────────────────────────────────────────────────────────
     private JPanel buildRightPanel() {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -293,11 +293,9 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel techCard = createCard();
         techCard.setLayout(new BorderLayout(0, 0));
         techCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         JLabel techTitle = new JLabel("Current Status");
         techTitle.setFont(AppTheme.FONT_SMALL_BOLD);
         techTitle.setForeground(AppTheme.TEXT_PRIMARY);
-
         JButton btnRefresh = new JButton("↺");
         btnRefresh.setFont(AppTheme.FONT_SMALL_BOLD);
         btnRefresh.setForeground(AppTheme.TEXT_SECONDARY);
@@ -307,17 +305,14 @@ public class CounterStaffCreateAppointment extends JPanel {
         btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnRefresh.setToolTipText("Refresh technician status");
         btnRefresh.addActionListener(e -> refreshTechStatus());
-
         JPanel techHeader = new JPanel(new BorderLayout());
         techHeader.setOpaque(false);
         techHeader.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(6, 12, 6, 8)
-        ));
-        techHeader.add(techTitle,   BorderLayout.WEST);
-        techHeader.add(btnRefresh,  BorderLayout.EAST);
+            BorderFactory.createEmptyBorder(6, 12, 6, 8)));
+        techHeader.add(techTitle,  BorderLayout.WEST);
+        techHeader.add(btnRefresh, BorderLayout.EAST);
         techCard.add(techHeader, BorderLayout.NORTH);
-
         techStatusPanel = new JPanel();
         techStatusPanel.setLayout(new BoxLayout(techStatusPanel, BoxLayout.Y_AXIS));
         techStatusPanel.setOpaque(false);
@@ -327,25 +322,20 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel slotsCard = createCard();
         slotsCard.setLayout(new BorderLayout(0, 0));
         slotsCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         JLabel slotsTitle = new JLabel("Slots");
         slotsTitle.setFont(AppTheme.FONT_SMALL_BOLD);
         slotsTitle.setForeground(AppTheme.TEXT_PRIMARY);
-
         slotsDateLabel = new JLabel("—");
         slotsDateLabel.setFont(AppTheme.FONT_CAPTION);
         slotsDateLabel.setForeground(AppTheme.TEXT_SECONDARY);
-
         JPanel slotsHeader = new JPanel(new BorderLayout(4, 0));
         slotsHeader.setOpaque(false);
         slotsHeader.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)));
         slotsHeader.add(slotsTitle,     BorderLayout.WEST);
         slotsHeader.add(slotsDateLabel, BorderLayout.EAST);
         slotsCard.add(slotsHeader, BorderLayout.NORTH);
-
         slotsPanel = new JPanel();
         slotsPanel.setLayout(new BoxLayout(slotsPanel, BoxLayout.Y_AXIS));
         slotsPanel.setOpaque(false);
@@ -356,57 +346,45 @@ public class CounterStaffCreateAppointment extends JPanel {
         techWrapper.setOpaque(false);
         techWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
         techWrapper.add(techCard, BorderLayout.CENTER);
-
         JPanel slotsWrapper = new JPanel(new BorderLayout());
         slotsWrapper.setOpaque(false);
         slotsWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
         slotsWrapper.add(slotsCard, BorderLayout.CENTER);
-
         p.add(techWrapper);
         p.add(Box.createRigidArea(new Dimension(0, 12)));
         p.add(slotsWrapper);
-
         return p;
     }
 
-    // ─── Wire change listeners ─────────────────────────────────────────────────
+    // ─── Listeners ────────────────────────────────────────────────────────────
     private void wireListeners() {
         dateField.addDateChangeListener(d -> onScheduleChanged());
         timeSlotCombo.addActionListener(e -> onScheduleChanged());
-        serviceItemCombo.addActionListener(e -> refreshTechCombo()); // service type affects slot count
-        customerCombo.addActionListener(e -> { });
-        techCombo.addActionListener(e -> { });
+        serviceItemCombo.addActionListener(e -> refreshTechCombo());
     }
 
     private void onScheduleChanged() {
-        // Fetch appointments once and share across both refresh calls to avoid double DB hit
         List<Appointment> appts = appointmentDAO.getAllAppointments();
         refreshSlots(appts);
         refreshTechCombo(appts);
     }
 
-    // ─── Populate customer combo ───────────────────────────────────────────────
     private void populateCustomerCombo() {
         customerCombo.removeAllItems();
         customerCombo.addItem("-- Select Registered Customer --");
-        for (String[] c : customerDAO.getApprovedCustomers()) {
-            customerCombo.addItem(c[0].trim() + " — " + c[2].trim()); // col 2 = customer_name
-        }
+        for (String[] c : customerDAO.getApprovedCustomers())
+            customerCombo.addItem(c[0].trim() + " — " + c[2].trim());
     }
 
-    // ─── Refresh technician status panel (right side) ─────────────────────────
+    // ─── Technician status panel ───────────────────────────────────────────────
     private void refreshTechStatus() {
         techStatusPanel.removeAll();
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         LocalTime now = LocalTime.now();
         LocalTime workStart = LocalTime.of(8, 0);
         LocalTime workEnd   = LocalTime.of(17, 0);
+        boolean outOfHours  = now.isBefore(workStart) || !now.isBefore(workEnd);
 
-        // Outside working hours — all technicians are Unavailable
-        boolean outOfHours = now.isBefore(workStart) || !now.isBefore(workEnd);
-
-        // A technician is Busy if they have an Approved appointment RIGHT NOW:
-        // their start_time ≤ now < start_time + service duration
         Set<String> busyNowIds = new HashSet<>();
         if (!outOfHours) {
             for (Appointment a : appointmentDAO.getAllAppointments()) {
@@ -414,21 +392,14 @@ public class CounterStaffCreateAppointment extends JPanel {
                 if (!a.getStatus().equalsIgnoreCase("Approved")) continue;
                 if (a.getTechnicianId() == null || a.getTechnicianId().equalsIgnoreCase("N/A")) continue;
                 try {
-                    LocalTime start = LocalTime.parse(a.getTimeSlot().trim(),
-                        DateTimeFormatter.ofPattern("hh:mm a"));
+                    LocalTime start = LocalTime.parse(a.getTimeSlot().trim(), DateTimeFormatter.ofPattern("hh:mm a"));
                     int hours = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
-                    LocalTime end = start.plusHours(hours);
-                    if (!now.isBefore(start) && now.isBefore(end)) {
-                        busyNowIds.add(a.getTechnicianId());
-                    }
+                    if (!now.isBefore(start) && now.isBefore(start.plusHours(hours))) busyNowIds.add(a.getTechnicianId());
                 } catch (Exception ignored) {}
             }
         }
-
         for (Technician t : technicianDAO.getAllTechnicians()) {
-            String status = outOfHours ? "Unavailable"
-                          : busyNowIds.contains(t.getTechnicianId()) ? "Busy"
-                          : "Available";
+            String status = outOfHours ? "Unavailable" : busyNowIds.contains(t.getTechnicianId()) ? "Busy" : "Available";
             techStatusPanel.add(buildTechStatusRow(t, status));
             techStatusPanel.add(Box.createRigidArea(new Dimension(0, 6)));
         }
@@ -442,58 +413,43 @@ public class CounterStaffCreateAppointment extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         row.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(AppTheme.BORDER_DEFAULT, 1, true),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
-
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
         JLabel nameLabel = new JLabel(t.getTechnicianId() + ": " + t.getUsername());
         nameLabel.setFont(AppTheme.FONT_SMALL_BOLD);
         nameLabel.setForeground(AppTheme.TEXT_PRIMARY);
-
         Color statusColor = switch (status) {
             case "Busy"        -> AppTheme.DANGER;
             case "Unavailable" -> AppTheme.TEXT_MUTED;
-            default            -> AppTheme.SUCCESS;   // Available
+            default            -> AppTheme.SUCCESS;
         };
         JLabel statusLabel = new JLabel("● " + status);
         statusLabel.setFont(AppTheme.FONT_CAPTION);
         statusLabel.setForeground(statusColor);
-
         JPanel nameStatus = new JPanel();
         nameStatus.setLayout(new BoxLayout(nameStatus, BoxLayout.Y_AXIS));
         nameStatus.setOpaque(false);
         nameStatus.add(nameLabel);
         nameStatus.add(statusLabel);
-
         row.add(nameStatus, BorderLayout.CENTER);
         return row;
     }
 
-    // ─── Shared helper — slots occupied by an appointment in TIME_SLOTS index space ──
-    /**
-     * Returns the set of TIME_SLOTS entries that appointment {@code a} occupies.
-     * Major service (ST002) occupies 3 consecutive slots; Normal occupies 1.
-     */
+    // ─── Occupied slots helper ─────────────────────────────────────────────────
     private Set<String> occupiedSlotsOf(Appointment a) {
-        List<String> slotList  = Arrays.asList(TIME_SLOTS);
+        List<String> slotList = Arrays.asList(TIME_SLOTS);
         int startIndex = slotList.indexOf(a.getTimeSlot().trim());
         if (startIndex < 0) return Collections.emptySet();
         int count = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
         Set<String> result = new HashSet<>();
-        for (int i = startIndex; i < Math.min(startIndex + count, TIME_SLOTS.length); i++) {
-            result.add(TIME_SLOTS[i]);
-        }
+        for (int i = startIndex; i < Math.min(startIndex + count, TIME_SLOTS.length); i++) result.add(TIME_SLOTS[i]);
         return result;
     }
 
-    // ─── Refresh slots panel — synced to date field, shows free/total count ────
-    private void refreshSlots() {
-        refreshSlots(appointmentDAO.getAllAppointments());
-    }
+    // ─── Slots panel ──────────────────────────────────────────────────────────
+    private void refreshSlots() { refreshSlots(appointmentDAO.getAllAppointments()); }
 
     private void refreshSlots(List<Appointment> allAppts) {
         slotsPanel.removeAll();
-
-        // Resolve selected date — convert dd/MM/yyyy → yyyy-MM-dd
         String dateRaw = dateField.getText().trim();
         String dateISO;
         try {
@@ -505,23 +461,15 @@ public class CounterStaffCreateAppointment extends JPanel {
             slotsDateLabel.setText("Today");
         }
         final String targetDate = dateISO;
-
         int totalTechs = technicianDAO.getAllTechnicians().size();
-
-        // Count how many techs are booked per slot on the target date
         List<Appointment> dateAppts = allAppts.stream()
             .filter(a -> a.getAppointmentDate().equals(targetDate)
-                && (a.getStatus().equalsIgnoreCase("Approved")
-                 || a.getStatus().equalsIgnoreCase("Pending"))
-                && a.getTechnicianId() != null
-                && !a.getTechnicianId().equalsIgnoreCase("N/A"))
+                && (a.getStatus().equalsIgnoreCase("Approved") || a.getStatus().equalsIgnoreCase("Pending"))
+                && a.getTechnicianId() != null && !a.getTechnicianId().equalsIgnoreCase("N/A"))
             .collect(Collectors.toList());
-
         for (int si = 0; si < TIME_SLOTS.length; si++) {
             final String slotStr = TIME_SLOTS[si];
-            long booked = dateAppts.stream()
-                .filter(a -> occupiedSlotsOf(a).contains(slotStr))
-                .count();
+            long booked = dateAppts.stream().filter(a -> occupiedSlotsOf(a).contains(slotStr)).count();
             int free = (int) Math.max(0, totalTechs - booked);
             slotsPanel.add(buildSlotRow(TIME_SLOTS[si], free, totalTechs));
             slotsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
@@ -531,129 +479,78 @@ public class CounterStaffCreateAppointment extends JPanel {
     }
 
     private JPanel buildSlotRow(String slot, int free, int total) {
-        // Color: green if plenty free, yellow if limited, red if full
         Color bg, border, textColor;
         String label;
-        if (free == 0) {
-            bg        = new Color(255, 235, 235);
-            border    = new Color(255, 180, 180);
-            textColor = AppTheme.DANGER;
-            label     = "Full";
-        } else if (free <= total / 2) {
-            bg        = new Color(255, 248, 220);
-            border    = new Color(255, 210, 100);
-            textColor = new Color(180, 120, 0);
-            label     = free + "/" + total + "  Free";
-        } else {
-            bg        = new Color(235, 255, 240);
-            border    = new Color(180, 230, 180);
-            textColor = new Color(30, 150, 60);
-            label     = free + "/" + total + "  Free";
-        }
-
+        if (free == 0)              { bg = new Color(255,235,235); border = new Color(255,180,180); textColor = AppTheme.DANGER;          label = "Full"; }
+        else if (free <= total / 2) { bg = new Color(255,248,220); border = new Color(255,210,100); textColor = new Color(180,120,0);      label = free+"/"+total+"  Free"; }
+        else                        { bg = new Color(235,255,240); border = new Color(180,230,180); textColor = new Color(30,150,60);       label = free+"/"+total+"  Free"; }
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(true);
         row.setBackground(bg);
         row.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(border, 1, true),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         row.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        // Click to auto-select this time slot in the combo
-        row.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+        row.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
                 for (int i = 0; i < timeSlotCombo.getItemCount(); i++) {
-                    if (slot.equals(timeSlotCombo.getItemAt(i))) {
-                        timeSlotCombo.setSelectedIndex(i);
-                        break;
-                    }
+                    if (slot.equals(timeSlotCombo.getItemAt(i))) { timeSlotCombo.setSelectedIndex(i); break; }
                 }
             }
         });
-
         JLabel slotLbl = new JLabel(slot);
         slotLbl.setFont(AppTheme.FONT_SMALL);
         slotLbl.setForeground(AppTheme.TEXT_PRIMARY);
-
         JLabel countLbl = new JLabel(label);
         countLbl.setFont(AppTheme.FONT_CAPTION);
         countLbl.setForeground(textColor);
-
         row.add(slotLbl,  BorderLayout.WEST);
         row.add(countLbl, BorderLayout.EAST);
         return row;
     }
 
-    // ─── Refresh technician combo (slot-based availability) ───────────────────
-    private void refreshTechCombo() {
-        refreshTechCombo(appointmentDAO.getAllAppointments());
-    }
+    // ─── Technician combo ─────────────────────────────────────────────────────
+    private void refreshTechCombo() { refreshTechCombo(appointmentDAO.getAllAppointments()); }
 
     private void refreshTechCombo(List<Appointment> allAppts) {
         techCombo.removeAllItems();
-
         String dateRaw = dateField.getText().trim();
         String slot    = (String) timeSlotCombo.getSelectedItem();
-
-        // Convert dd/MM/yyyy → yyyy-MM-dd
         String dateISO;
         try {
             LocalDate parsed = LocalDate.parse(dateRaw, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             dateISO = parsed.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        } catch (Exception ignored) {
-            dateISO = dateRaw;
-        }
+        } catch (Exception ignored) { dateISO = dateRaw; }
 
         String newServiceSel  = (String) serviceItemCombo.getSelectedItem();
         boolean serviceChosen = newServiceSel != null && !newServiceSel.startsWith("--");
         boolean ready         = !dateISO.isEmpty() && slot != null && serviceChosen;
-
-        // Enable/disable based on whether service item, date, and slot are all chosen
         techCombo.setEnabled(ready);
         if (btnViewSchedule != null) btnViewSchedule.setEnabled(ready);
-
-        if (!ready) {
-            techCombo.addItem("-- Select date & time slot first --");
-            return;
-        }
+        if (!ready) { techCombo.addItem("-- Select date & time slot first --"); return; }
 
         techCombo.addItem("-- Select Technician --");
-
-        // Determine how many slots the NEW appointment would occupy,
-        // based on the service type currently selected in the form.
         String newServiceItemId = newServiceSel.split(" — ")[0].trim();
         String newServiceTypeId = ServiceItemDAO.getServiceTypeId(newServiceItemId);
         int newSlotsNeeded = "ST002".equals(newServiceTypeId) ? 3 : 1;
 
-        // Build the set of slots the NEW appointment would occupy.
-        // Guard: if the selected slot isn't in TIME_SLOTS, show all techs as free
-        // rather than silently treating everyone as available.
-        List<String> slotList    = Arrays.asList(TIME_SLOTS);
-        int newStartIndex        = slotList.indexOf(slot.trim());
-        if (newStartIndex < 0) {
-            techCombo.addItem("(Invalid time slot selected)");
-            techCombo.setEnabled(false);
-            return;
-        }
+        List<String> slotList = Arrays.asList(TIME_SLOTS);
+        int newStartIndex = slotList.indexOf(slot.trim());
+        if (newStartIndex < 0) { techCombo.addItem("(Invalid time slot selected)"); techCombo.setEnabled(false); return; }
+
         Set<String> newOccupiedSlots = new HashSet<>();
-        for (int i = newStartIndex; i < Math.min(newStartIndex + newSlotsNeeded, TIME_SLOTS.length); i++) {
+        for (int i = newStartIndex; i < Math.min(newStartIndex + newSlotsNeeded, TIME_SLOTS.length); i++)
             newOccupiedSlots.add(TIME_SLOTS[i]);
-        }
 
         final String date = dateISO;
-
-        // A technician is busy if ANY of their existing appointments overlap
-        // with ANY of the slots the new appointment would occupy.
-        // Uses the shared occupiedSlotsOf() helper — no duplicate index logic.
         final Set<String> busyIds = allAppts.stream()
-            .filter(a -> (a.getStatus().equalsIgnoreCase("Approved")
-                       || a.getStatus().equalsIgnoreCase("Pending"))
-                      && a.getAppointmentDate().trim().equals(date)
-                      && a.getTechnicianId() != null
-                      && !a.getTechnicianId().equalsIgnoreCase("null")
-                      && !a.getTechnicianId().trim().isEmpty()
-                      && !Collections.disjoint(occupiedSlotsOf(a), newOccupiedSlots))
+            .filter(a -> (a.getStatus().equalsIgnoreCase("Approved") || a.getStatus().equalsIgnoreCase("Pending"))
+                && a.getAppointmentDate().trim().equals(date)
+                && a.getTechnicianId() != null
+                && !a.getTechnicianId().equalsIgnoreCase("null")
+                && !a.getTechnicianId().trim().isEmpty()
+                && !Collections.disjoint(occupiedSlotsOf(a), newOccupiedSlots))
             .map(Appointment::getTechnicianId)
             .collect(Collectors.toSet());
 
@@ -661,13 +558,8 @@ public class CounterStaffCreateAppointment extends JPanel {
             .filter(t -> !busyIds.contains(t.getTechnicianId()))
             .collect(Collectors.toList());
 
-        if (free.isEmpty()) {
-            techCombo.addItem("(No technicians free for this slot)");
-        } else {
-            for (Technician t : free) {
-                techCombo.addItem(t.getTechnicianId() + " — " + t.getUsername());
-            }
-        }
+        if (free.isEmpty()) techCombo.addItem("(No technicians free for this slot)");
+        else free.forEach(t -> techCombo.addItem(t.getTechnicianId() + " — " + t.getUsername()));
     }
 
     // ─── Confirm handler ──────────────────────────────────────────────────────
@@ -681,60 +573,35 @@ public class CounterStaffCreateAppointment extends JPanel {
         String brand      = vehicleBrandField.getText().trim();
         String model      = vehicleModelField.getText().trim();
 
-        if (custSel == null || custSel.startsWith("--")) {
-            showError("Please select a customer."); return;
-        }
-        if (plate.isEmpty() || plate.equals("e.g. WXY-1234")) {
-            showError("Please enter the vehicle plate number."); return;
-        }
-        if (brand.isEmpty() || brand.equals("e.g. Toyota")) {
-            showError("Please enter the vehicle brand."); return;
-        }
-        if (model.isEmpty() || model.equals("e.g. Camry")) {
-            showError("Please enter the vehicle model."); return;
-        }
-        if (serviceSel == null || serviceSel.startsWith("--")) {
-            showError("Please select a service item."); return;
-        }
-        if (date.isEmpty()) {
-            showError("Please enter the appointment date."); return;
-        }
-        if (techSel == null || techSel.startsWith("--") || techSel.startsWith("(No")) {
-            showError("Please select an available technician."); return;
-        }
+        if (custSel == null || custSel.startsWith("--"))                               { showError("Please select a customer."); return; }
+        if (plate.isEmpty() || plate.equals("e.g. WXY-1234"))                         { showError("Please enter the vehicle plate number."); return; }
+        if (brand.isEmpty() || brand.equals("e.g. Toyota"))                           { showError("Please enter the vehicle brand."); return; }
+        if (model.isEmpty() || model.equals("e.g. Camry"))                            { showError("Please enter the vehicle model."); return; }
+        if (serviceSel == null || serviceSel.startsWith("--"))                         { showError("Please select a service item."); return; }
+        if (date.isEmpty())                                                             { showError("Please enter the appointment date."); return; }
+        if (techSel == null || techSel.startsWith("--") || techSel.startsWith("(No")) { showError("Please select an available technician."); return; }
 
         String customerId    = custSel.split(" — ")[0].trim();
         String serviceItemId = serviceSel.split(" — ")[0].trim();
         String serviceTypeId = ServiceItemDAO.getServiceTypeId(serviceItemId);
         String techId        = techSel.split(" — ")[0].trim();
-
-        // Convert date from dd/MM/yyyy (form) to yyyy-MM-dd (storage)
         String dateISO;
         try {
             LocalDate parsed = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             dateISO = parsed.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        } catch (Exception ex) {
-            dateISO = date; // already yyyy-MM-dd or fallback
-        }
+        } catch (Exception ex) { dateISO = date; }
 
-        String apptId = ""; // auto-generated inside addAppointment
-
-        Appointment appt = new Appointment(
-            apptId, customerId, staffId, serviceTypeId,
-            techId, serviceItemId,
-            slot,     // timeSlot (start_time)
-            dateISO,  // appointmentDate (yyyy-MM-dd)
-            "Approved",
-            brand, model, plate,
-            "N/A"     // technicianFeedback
-        );
+        Appointment appt = new Appointment("", customerId, staffId, serviceTypeId,
+            techId, serviceItemId, slot, dateISO, "Approved", brand, model, plate, "N/A");
 
         boolean ok = appointmentDAO.addAppointment(appt);
         if (ok) {
-            JOptionPane.showMessageDialog(this,
+            UIComponent.showDialog(this, "Appointment Created",
+                UIComponent.DialogType.SUCCESS,
                 "Appointment created and approved successfully!",
-                "Appointment Created", JOptionPane.INFORMATION_MESSAGE);
-            resetForm();
+                null, new UIComponent.DialogAction[]{
+                    new UIComponent.DialogAction("OK", UIComponent.DialogActionStyle.PRIMARY, this::resetForm)
+                });
         } else {
             showError("Failed to save appointment. Please try again.");
         }
@@ -742,182 +609,366 @@ public class CounterStaffCreateAppointment extends JPanel {
 
     // ─── Customer search dialog ────────────────────────────────────────────────
     private void showCustomerSearch() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-            "Search Customer", true);
-        dialog.setSize(520, 380);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout(8, 8));
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0, 0, 0, 0));
 
-        JPanel top = new JPanel(new BorderLayout(8, 0));
-        top.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+        JPanel root = buildDialogRootCard();
+        root.setLayout(new BorderLayout(0, 12));
+        root.setBorder(BorderFactory.createEmptyBorder(
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD,
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD));
+
+        root.add(buildDialogHeader("Search Customer", dialog), BorderLayout.NORTH);
+
+        // ── search row ────────────────────────────────────────────────────────
         JTextField searchField = UIComponent.createTextField("Search by ID, name or email...");
-        searchField.setPreferredSize(new Dimension(0, 36));
         JButton btnGo = UIComponent.createSmallButton("Search");
-        top.add(searchField, BorderLayout.CENTER);
-        top.add(btnGo,       BorderLayout.EAST);
+        btnGo.setPreferredSize(new Dimension(82, 36));
+        JPanel searchRow = new JPanel(new BorderLayout(8, 0));
+        searchRow.setOpaque(false);
+        searchRow.add(searchField, BorderLayout.CENTER);
+        searchRow.add(btnGo,       BorderLayout.EAST);
 
+        // ── table — styled like ManageEmployeesPage ───────────────────────────
         String[] cols = {"ID", "Name", "Email", "Contact"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+        DefaultTableModel tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        JTable tbl = new JTable(model);
-        tbl.setFont(AppTheme.FONT_SMALL);
-        tbl.setRowHeight(AppTheme.ROW_HEIGHT_TABLE);
+        JTable tbl = buildStyledTable(tableModel);
         tbl.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane scroll = new JScrollPane(tbl);
+        tbl.getColumnModel().getColumn(0).setPreferredWidth(70);
+        tbl.getColumnModel().getColumn(1).setPreferredWidth(150);
+        tbl.getColumnModel().getColumn(2).setPreferredWidth(190);
+        tbl.getColumnModel().getColumn(3).setPreferredWidth(110);
 
+        // Wrap in rounded card using JLayer (same as ManageEmployeesPage)
+        JPanel tablePanel = buildRoundedTablePanel(tbl);
+        tablePanel.setPreferredSize(new Dimension(520, 280));
+
+        JPanel center = new JPanel(new BorderLayout(0, 10));
+        center.setOpaque(false);
+        center.add(searchRow,  BorderLayout.NORTH);
+        center.add(tablePanel, BorderLayout.CENTER);
+        root.add(center, BorderLayout.CENTER);
+
+        // ── footer ────────────────────────────────────────────────────────────
+        JButton btnCancel = UIComponent.createOutlineButton("Cancel");
+        JButton btnSelect = UIComponent.createPrimaryButton("Select");
+        btnCancel.addActionListener(e -> dialog.dispose());
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        footer.setOpaque(false);
+        footer.add(btnCancel);
+        footer.add(btnSelect);
+        root.add(footer, BorderLayout.SOUTH);
+
+        // ── logic ─────────────────────────────────────────────────────────────
         Runnable populate = () -> {
-            model.setRowCount(0);
+            tableModel.setRowCount(0);
             String q = searchField.getText().trim().toLowerCase();
             for (String[] c : customerDAO.getAllCustomers()) {
-                if (q.isEmpty()
-                        || c[0].toLowerCase().contains(q)
-                        || c[2].toLowerCase().contains(q)   // col 2 = customer_name
-                        || c[3].toLowerCase().contains(q)) { // col 3 = email
-                    model.addRow(new Object[]{c[0], c[2], c[3], c[4]}); // id, name, email, phone
-                }
+                if (q.isEmpty() || c[0].toLowerCase().contains(q)
+                        || c[2].toLowerCase().contains(q) || c[3].toLowerCase().contains(q))
+                    tableModel.addRow(new Object[]{c[0], c[2], c[3], c[4]});
             }
         };
         populate.run();
         btnGo.addActionListener(e -> populate.run());
         searchField.addActionListener(e -> populate.run());
 
-        JButton btnSelect = UIComponent.createSmallButton("Select");
-        btnSelect.addActionListener(e -> {
+        Runnable doSelect = () -> {
             int row = tbl.getSelectedRow();
             if (row < 0) return;
-            String id = (String) model.getValueAt(row, 0);
+            String id = (String) tableModel.getValueAt(row, 0);
             for (int i = 0; i < customerCombo.getItemCount(); i++) {
-                String item = customerCombo.getItemAt(i);
-                if (item.startsWith(id + " — ")) {
-                    customerCombo.setSelectedIndex(i);
-                    break;
+                if (customerCombo.getItemAt(i).startsWith(id + " — ")) {
+                    customerCombo.setSelectedIndex(i); break;
                 }
             }
             dialog.dispose();
+        };
+        btnSelect.addActionListener(e -> doSelect.run());
+        tbl.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) { if (e.getClickCount() == 2) doSelect.run(); }
+        });
+        tbl.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+           .put(KeyStroke.getKeyStroke("ENTER"), "select");
+        tbl.getActionMap().put("select", new javax.swing.AbstractAction() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { doSelect.run(); }
         });
 
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottom.add(btnSelect);
-
-        dialog.add(top,    BorderLayout.NORTH);
-        dialog.add(scroll, BorderLayout.CENTER);
-        dialog.add(bottom, BorderLayout.SOUTH);
+        dialog.setContentPane(root);
+        dialog.pack();
+        dialog.setMinimumSize(new Dimension(560, dialog.getHeight()));
+        dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
     }
 
-    // ─── Technician schedule dialog ────────────────────────────────────────────
+    // ─── Technician schedule dialog ───────────────────────────────────────────
     private void showTechSchedule() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-            "Technician Schedule", true);
-        dialog.setSize(680, 460);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout(8, 8));
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0, 0, 0, 0));
 
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        top.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        JPanel root = buildDialogRootCard();
+        root.setLayout(new BorderLayout(0, 12));
+        root.setBorder(BorderFactory.createEmptyBorder(
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD,
+            AppTheme.PADDING_CARD, AppTheme.PADDING_CARD));
 
+        root.add(buildDialogHeader("Technician Schedule", dialog), BorderLayout.NORTH);
+
+        // ── filter row ────────────────────────────────────────────────────────
         JComboBox<String> techFilter = UIComponent.createComboBox(new String[0]);
-        techFilter.setPreferredSize(new Dimension(200, 38));
+        techFilter.setPreferredSize(new Dimension(200, 36));
         techFilter.addItem("All Technicians");
-        for (Technician t : technicianDAO.getAllTechnicians()) {
+        for (Technician t : technicianDAO.getAllTechnicians())
             techFilter.addItem(t.getTechnicianId() + " — " + t.getUsername());
+
+        UIComponent.DatePickerField datePicker = UIComponent.createDatePicker(LocalDate.now());
+        datePicker.setPreferredSize(new Dimension(130, 36));
+
+        JButton btnLoad = UIComponent.createSmallButton("↺  Refresh");
+        btnLoad.setPreferredSize(new Dimension(110, 36));
+
+        JPanel filterRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        filterRow.setOpaque(false);
+        filterRow.add(techFilter);
+        filterRow.add(Box.createHorizontalStrut(4));
+        filterRow.add(datePicker);
+        filterRow.add(btnLoad);
+
+        // ── grid holder ───────────────────────────────────────────────────────
+        JPanel gridHolder = new JPanel(new BorderLayout());
+        gridHolder.setOpaque(false);
+
+        JPanel center = new JPanel(new BorderLayout(0, 10));
+        center.setOpaque(false);
+        center.add(filterRow,  BorderLayout.NORTH);
+        center.add(gridHolder, BorderLayout.CENTER);
+        root.add(center, BorderLayout.CENTER);
+
+        // ── footer: legend + close ────────────────────────────────────────────
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        legend.setOpaque(false);
+        for (Object[] item : new Object[][]{
+                {new Color(235,255,240), new Color(30,150,60),  "Free"},
+                {new Color(255,220,220), AppTheme.DANGER,        "Booked"},
+                {new Color(255,235,235), new Color(180,50,50),   "Booked(Cont.)"}}) {
+            JLabel dot = new JLabel("●  " + item[2]);
+            dot.setFont(AppTheme.FONT_CAPTION);
+            dot.setForeground((Color) item[1]);
+            dot.setOpaque(true);
+            dot.setBackground((Color) item[0]);
+            dot.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+            legend.add(dot);
         }
+        JButton btnClose = UIComponent.createOutlineButton("Close");
+        btnClose.setPreferredSize(new Dimension(100, 36));
+        btnClose.addActionListener(e -> dialog.dispose());
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setOpaque(false);
+        footer.add(legend,   BorderLayout.WEST);
+        footer.add(btnClose, BorderLayout.EAST);
+        root.add(footer, BorderLayout.SOUTH);
 
-        JTextField dateFilter = UIComponent.createTextField("dd/MM/yyyy");
-        dateFilter.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        dateFilter.setForeground(AppTheme.TEXT_PRIMARY);
-        dateFilter.setPreferredSize(new Dimension(120, 36));
-
-        JButton btnLoad = UIComponent.createSmallButton("Load");
-
-        top.add(new JLabel("Technician:"));
-        top.add(techFilter);
-        top.add(Box.createHorizontalStrut(8));
-        top.add(new JLabel("Date:"));
-        top.add(dateFilter);
-        top.add(btnLoad);
-
-        String[] cols = {"Time Slot", "Status"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        JTable tbl = new JTable(model) {
-            @Override public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
-                Component c = super.prepareRenderer(renderer, row, col);
-                String val = (String) getValueAt(row, 1);
-                if (val != null && val.startsWith("Booked")) {
-                    c.setBackground(new Color(255, 220, 220));
-                    c.setForeground(Color.BLACK);
-                } else {
-                    c.setBackground(new Color(220, 255, 230));
-                    c.setForeground(Color.BLACK);
-                }
-                return c;
-            }
-        };
-        tbl.setFont(AppTheme.FONT_SMALL);
-        tbl.setRowHeight(AppTheme.ROW_HEIGHT_TABLE);
-        tbl.setEnabled(false);
-        tbl.getColumnModel().getColumn(0).setPreferredWidth(120);
-        tbl.getColumnModel().getColumn(1).setPreferredWidth(520);
-
-        Runnable loadTable = () -> {
-            model.setRowCount(0);
-            String dateVal = dateFilter.getText().trim();
+        // ── load logic ────────────────────────────────────────────────────────
+        Runnable loadGrid = () -> {
             String techSel = (String) techFilter.getSelectedItem();
             String filterTechId = (techSel == null || techSel.equals("All Technicians"))
                 ? null : techSel.split(" — ")[0].trim();
+            LocalDate selDate = datePicker.getDate();
+            if (selDate == null) selDate = LocalDate.now();
+            String targetDateISO = selDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            List<Technician> allTechs = technicianDAO.getAllTechnicians();
+            List<Technician> displayTechs = filterTechId == null ? allTechs
+                : allTechs.stream().filter(t -> t.getTechnicianId().equals(filterTechId)).collect(Collectors.toList());
 
             List<Appointment> appts = appointmentDAO.getAllAppointments().stream()
-                .filter(a -> a.getAppointmentDate().trim().equals(dateVal)
-                    && (a.getStatus().equalsIgnoreCase("Approved")
-                     || a.getStatus().equalsIgnoreCase("Pending"))
+                .filter(a -> a.getAppointmentDate().trim().equals(targetDateISO)
+                    && (a.getStatus().equalsIgnoreCase("Approved") || a.getStatus().equalsIgnoreCase("Pending"))
                     && (filterTechId == null || filterTechId.equals(a.getTechnicianId())))
                 .collect(Collectors.toList());
 
-            for (String slot : TIME_SLOTS) {
-                List<String> matches = new ArrayList<>();
-                for (Appointment a : appts) {
-                    try {
-                        LocalTime slotTime  = LocalTime.parse(slot, DateTimeFormatter.ofPattern("hh:mm a"));
-                        LocalTime startTime = LocalTime.parse(a.getTimeSlot().trim(), DateTimeFormatter.ofPattern("hh:mm a"));
-
-                        // Major service (ST002) occupies 3 hours, Normal (ST001) occupies 1 hour
-                        int hours = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
-                        LocalTime endTime = startTime.plusHours(hours);
-
-                        if (!slotTime.isBefore(startTime) && slotTime.isBefore(endTime)) {
-                            String techName = resolveTechName(a.getTechnicianId());
-                            matches.add("Booked — " + a.getAppointmentId()
-                                + " | " + techName
-                                + " | " + ("ST001".equals(a.getServiceTypeId()) ? "Normal" : "Major")
-                                + " | " + a.getStatus());
-                        }
-                    } catch (Exception ignored) {}
-                }
-                String status = matches.isEmpty() ? "Available" : String.join(";  ", matches);
-                model.addRow(new Object[]{slot, status});
-            }
+            gridHolder.removeAll();
+            gridHolder.add(buildScheduleGrid(appts, displayTechs), BorderLayout.CENTER);
+            gridHolder.revalidate();
+            gridHolder.repaint();
         };
 
-        btnLoad.addActionListener(e -> loadTable.run());
-        loadTable.run();
+        btnLoad.addActionListener(e -> loadGrid.run());
+        datePicker.addDateChangeListener(d -> loadGrid.run());
+        techFilter.addActionListener(e -> loadGrid.run());
+        loadGrid.run();
 
-        dialog.add(top,                  BorderLayout.NORTH);
-        dialog.add(new JScrollPane(tbl), BorderLayout.CENTER);
+        dialog.setContentPane(root);
+        dialog.pack();
+        dialog.setMinimumSize(new Dimension(720, 560));
+        dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
     }
 
-    // ─── Reset form after successful submit ───────────────────────────────────
+    // ─── Schedule grid — rounded via JLayer ───────────────────────────────────
+    private JPanel buildScheduleGrid(List<Appointment> appts, List<Technician> displayTechs) {
+        int techCount = displayTechs.size();
+
+        String[] colNames = new String[techCount + 1];
+        colNames[0] = "Time Slot";
+        for (int i = 0; i < techCount; i++) {
+            Technician t = displayTechs.get(i);
+            colNames[i + 1] = "<html><center><b>" + t.getTechnicianId()
+                + "</b><br><font color='#888888' size='2'>" + t.getUsername() + "</font></center></html>";
+        }
+
+        Object[][] data = new Object[TIME_SLOTS.length][techCount + 1];
+        for (int si = 0; si < TIME_SLOTS.length; si++) {
+            data[si][0] = TIME_SLOTS[si];
+            String slotStr = TIME_SLOTS[si];
+            for (int ti = 0; ti < techCount; ti++) {
+                String techId = displayTechs.get(ti).getTechnicianId();
+                Optional<Appointment> match = appts.stream()
+                    .filter(a -> techId.equals(a.getTechnicianId()) && occupiedSlotsOf(a).contains(slotStr))
+                    .findFirst();
+                if (match.isPresent()) {
+                    Appointment a = match.get();
+                    boolean isStart = a.getTimeSlot().trim().equals(slotStr);
+                    String type = "ST002".equals(a.getServiceTypeId()) ? "Major" : "Normal";
+                    data[si][ti + 1] = isStart ? "BOOKED|" + a.getAppointmentId() + "|" + type
+                                                : "CONT|"  + a.getAppointmentId();
+                } else {
+                    data[si][ti + 1] = "FREE";
+                }
+            }
+        }
+
+        DefaultTableModel gridModel = new DefaultTableModel(data, colNames) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+
+        JTable grid = new JTable(gridModel) {
+            // Row dividers — same technique as ManageEmployeesPage
+            @Override public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(AppTheme.SEPARATOR);
+                for (int i = 0; i < getRowCount(); i++)
+                    g2.drawLine(0, (i + 1) * getRowHeight() - 1, getWidth(), (i + 1) * getRowHeight() - 1);
+                g2.dispose();
+            }
+            @Override public Component prepareRenderer(TableCellRenderer r, int row, int col) {
+                JLabel lbl = new JLabel();
+                lbl.setOpaque(true);
+                lbl.setHorizontalAlignment(SwingConstants.CENTER);
+                lbl.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+
+                if (col == 0) {
+                    lbl.setText(TIME_SLOTS[row]);
+                    lbl.setFont(AppTheme.FONT_SMALL_BOLD);
+                    lbl.setForeground(AppTheme.TEXT_SECONDARY);
+                    lbl.setBackground(AppTheme.BG_PAGE);
+                } else {
+                    String val = (String) getValueAt(row, col);
+                    if (val == null || "FREE".equals(val)) {
+                        lbl.setText("Free");
+                        lbl.setFont(AppTheme.FONT_SMALL);
+                        lbl.setBackground(new Color(235, 255, 240));
+                        lbl.setForeground(new Color(30, 150, 60));
+                    } else if (val.startsWith("CONT|")) {
+                        lbl.setText("↓ " + val.split("\\|")[1]);
+                        lbl.setFont(AppTheme.FONT_CAPTION);
+                        lbl.setBackground(new Color(255, 235, 235));
+                        lbl.setForeground(new Color(180, 50, 50));
+                    } else {
+                        String[] parts = val.split("\\|");
+                        String apptId = parts.length > 1 ? parts[1] : "—";
+                        String type   = parts.length > 2 ? parts[2] : "";
+                        lbl.setText("<html><center><b>" + apptId + "</b>"
+                            + "<br><font color='#cc3333' size='2'>" + type + "</font></center></html>");
+                        lbl.setFont(AppTheme.FONT_SMALL);
+                        lbl.setBackground(new Color(255, 220, 220));
+                        lbl.setForeground(AppTheme.DANGER);
+                    }
+                }
+                return lbl;
+            }
+        };
+
+        grid.setRowHeight(48);
+        grid.setShowGrid(false);
+        grid.setIntercellSpacing(new Dimension(0, 0));
+        grid.setEnabled(false);
+        grid.setBackground(AppTheme.BG_CARD);
+        grid.setFillsViewportHeight(false);
+
+        // ── Header — same style as ManageEmployeesPage ────────────────────────
+        grid.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(
+                    JTable t, Object val, boolean sel, boolean foc, int row, int col) {
+                JLabel lbl = new JLabel(val == null ? "" : val.toString());
+                lbl.setOpaque(true);
+                lbl.setHorizontalAlignment(SwingConstants.CENTER);
+                lbl.setBackground(AppTheme.BG_PAGE);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
+                    BorderFactory.createEmptyBorder(0, 10, 0, 10)));
+                if (col == 0) {
+                    lbl.setText("Time Slot");
+                    lbl.setFont(AppTheme.FONT_LABEL);
+                    lbl.setForeground(AppTheme.TEXT_MUTED);
+                } else {
+                    lbl.setFont(AppTheme.FONT_SMALL_BOLD);
+                    lbl.setForeground(AppTheme.TEXT_PRIMARY);
+                }
+                return lbl;
+            }
+        });
+        grid.getTableHeader().setPreferredSize(new Dimension(0, 50));
+        grid.getTableHeader().setReorderingAllowed(false);
+        grid.getTableHeader().setResizingAllowed(false);
+        grid.getTableHeader().setBackground(AppTheme.BG_PAGE);
+
+        grid.getColumnModel().getColumn(0).setMinWidth(85);
+        grid.getColumnModel().getColumn(0).setMaxWidth(100);
+        for (int i = 1; i <= techCount; i++) grid.getColumnModel().getColumn(i).setPreferredWidth(140);
+
+        // ── Pull header + scroll into inner panel, then JLayer for rounded clip ─
+        JScrollPane scroll = new JScrollPane(grid);
+        // Pin viewport height to exact table height — prevents blank space below last row
+        scroll.getViewport().setPreferredSize(
+            new Dimension(0, grid.getRowHeight() * TIME_SLOTS.length));
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(true);
+        scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setBorder(null);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scroll.getVerticalScrollBar().setUnitIncrement(14);
+
+        JTableHeader gridHeader = grid.getTableHeader();
+        gridHeader.setOpaque(true);
+        gridHeader.setBackground(AppTheme.BG_PAGE);
+        scroll.setColumnHeader(null);   // pull header out of scroll pane
+
+        JPanel inner = new JPanel(new BorderLayout());
+        inner.setOpaque(true);
+        inner.setBackground(AppTheme.BG_CARD);
+        inner.add(gridHeader, BorderLayout.NORTH);
+        inner.add(scroll,     BorderLayout.CENTER);
+
+        return wrapWithRoundedLayer(inner);
+    }
+
+    // ─── Reset form ───────────────────────────────────────────────────────────
     private void resetForm() {
         customerCombo.setSelectedIndex(0);
-        vehicleField.setText("e.g. WXY-1234");
-        vehicleField.setForeground(AppTheme.TEXT_MUTED);
-        vehicleBrandField.setText("e.g. Toyota");
-        vehicleBrandField.setForeground(AppTheme.TEXT_MUTED);
-        vehicleModelField.setText("e.g. Camry");
-        vehicleModelField.setForeground(AppTheme.TEXT_MUTED);
+        vehicleField.setText("e.g. WXY-1234");    vehicleField.setForeground(AppTheme.TEXT_MUTED);
+        vehicleBrandField.setText("e.g. Toyota"); vehicleBrandField.setForeground(AppTheme.TEXT_MUTED);
+        vehicleModelField.setText("e.g. Camry");  vehicleModelField.setForeground(AppTheme.TEXT_MUTED);
         serviceItemCombo.setSelectedIndex(0);
         dateField.setDate(LocalDate.now());
         timeSlotCombo.setSelectedIndex(0);
@@ -927,10 +978,8 @@ public class CounterStaffCreateAppointment extends JPanel {
         refreshTechCombo(appts);
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
     private void showError(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Validation Error", JOptionPane.WARNING_MESSAGE);
+        UIComponent.showDialog(this, "Validation Error", UIComponent.DialogType.WARNING, msg, null, null);
     }
 
     private String resolveTechName(String techId) {
@@ -941,16 +990,182 @@ public class CounterStaffCreateAppointment extends JPanel {
             .findFirst().orElse(techId);
     }
 
-    // ─── Form row helper ──────────────────────────────────────────────────────
-    private static final int FIELD_H = 38; // uniform height for all input rows
-    private static final int NOTES_H = 80; // fixed height for notes scroll pane
+    // ─── Dialog helpers ───────────────────────────────────────────────────────
 
-    // Track how many rows have been added to each card
+    private JPanel buildDialogRootCard() {
+        JPanel root = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.BG_CARD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.setColor(AppTheme.BORDER_CARD);
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.dispose();
+            }
+        };
+        root.setOpaque(false);
+        return root;
+    }
+
+    private JPanel buildDialogHeader(String title, JDialog dialog) {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        header.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
+            BorderFactory.createEmptyBorder(0, 0, 10, 0)));
+        JLabel titleLbl = new JLabel(title);
+        titleLbl.setFont(AppTheme.FONT_BODY_BOLD);
+        titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
+        JButton btnX = new JButton("✕");
+        btnX.setFont(AppTheme.FONT_SMALL_BOLD);
+        btnX.setForeground(AppTheme.TEXT_MUTED);
+        btnX.setContentAreaFilled(false);
+        btnX.setBorderPainted(false);
+        btnX.setFocusPainted(false);
+        btnX.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnX.addActionListener(e -> dialog.dispose());
+        btnX.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) { btnX.setForeground(AppTheme.DANGER); }
+            @Override public void mouseExited(MouseEvent e)  { btnX.setForeground(AppTheme.TEXT_MUTED); }
+        });
+        header.add(titleLbl, BorderLayout.WEST);
+        header.add(btnX,     BorderLayout.EAST);
+        return header;
+    }
+
+    /**
+     * JTable styled like ManageEmployeesPage:
+     * row height 46, subtle row dividers painted in paintComponent,
+     * no grid lines, proper header with FONT_LABEL + SEPARATOR bottom border.
+     */
+    private JTable buildStyledTable(DefaultTableModel model) {
+        JTable tbl = new JTable(model) {
+            @Override public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(AppTheme.SEPARATOR);
+                for (int i = 0; i < getRowCount(); i++)
+                    g2.drawLine(0, (i + 1) * getRowHeight() - 1, getWidth(), (i + 1) * getRowHeight() - 1);
+                g2.dispose();
+            }
+        };
+        tbl.setRowHeight(46);
+        tbl.setFont(AppTheme.FONT_SMALL);
+        tbl.setForeground(AppTheme.TEXT_PRIMARY);
+        tbl.setBackground(AppTheme.BG_CARD);
+        tbl.setShowGrid(false);
+        tbl.setIntercellSpacing(new Dimension(0, 0));
+        tbl.setFillsViewportHeight(true);
+        tbl.setSelectionBackground(AppTheme.PRIMARY_LIGHT);
+        tbl.setSelectionForeground(AppTheme.TEXT_PRIMARY);
+
+        // Header — same as ManageEmployeesPage
+        tbl.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object val,
+                    boolean sel, boolean focus, int row, int col) {
+                JLabel lbl = new JLabel(val == null ? "" : val.toString());
+                lbl.setFont(AppTheme.FONT_LABEL);
+                lbl.setForeground(AppTheme.TEXT_SECONDARY);
+                lbl.setBackground(AppTheme.BG_PAGE);
+                lbl.setOpaque(true);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
+                    BorderFactory.createEmptyBorder(0, 14, 0, 8)));
+                lbl.setHorizontalAlignment(SwingConstants.LEFT);
+                return lbl;
+            }
+        });
+        tbl.getTableHeader().setPreferredSize(new Dimension(0, 38));
+        tbl.getTableHeader().setReorderingAllowed(false);
+        tbl.getTableHeader().setResizingAllowed(false);
+
+        // Cell renderer — padded, col 0 as muted ID
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object val,
+                    boolean sel, boolean focus, int row, int col) {
+                super.getTableCellRendererComponent(t, val, sel, focus, row, col);
+                setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 8));
+                if (!sel) {
+                    setBackground(AppTheme.BG_CARD);
+                    setForeground(col == 0 ? AppTheme.TEXT_SECONDARY : AppTheme.TEXT_PRIMARY);
+                }
+                setFont(col == 0 ? AppTheme.FONT_LABEL : AppTheme.FONT_SMALL);
+                return this;
+            }
+        };
+        for (int i = 0; i < model.getColumnCount(); i++)
+            tbl.getColumnModel().getColumn(i).setCellRenderer(cellRenderer);
+
+        return tbl;
+    }
+
+    /**
+     * Wraps a JTable (with its header pulled out) into a rounded-corner card
+     * using JLayer — identical approach to ManageEmployeesPage.buildTablePanel().
+     */
+    private JPanel buildRoundedTablePanel(JTable tbl) {
+        JScrollPane scroll = new JScrollPane(tbl);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(true);
+        scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+        scroll.getViewport().setBorder(null);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        JTableHeader tableHeader = tbl.getTableHeader();
+        tableHeader.setOpaque(true);
+        tableHeader.setBackground(AppTheme.BG_PAGE);
+        scroll.setColumnHeader(null);   // pull header out for clean corner clipping
+
+        JPanel inner = new JPanel(new BorderLayout());
+        inner.setOpaque(true);
+        inner.setBackground(AppTheme.BG_CARD);
+        inner.add(tableHeader, BorderLayout.NORTH);
+        inner.add(scroll,      BorderLayout.CENTER);
+
+        return wrapWithRoundedLayer(inner);
+    }
+
+    /**
+     * Shared JLayer wrapper: clips contents to a rounded rect and draws
+     * a 1px SEPARATOR border on top — reusable for both the customer table
+     * and the schedule grid.
+     */
+    private JPanel wrapWithRoundedLayer(JPanel inner) {
+        final int r = AppTheme.RADIUS_CARD * 2;
+        LayerUI<JPanel> layerUI = new LayerUI<JPanel>() {
+            @Override public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.BG_CARD);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), r, r);
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, c.getWidth(), c.getHeight(), r, r));
+                super.paint(g2, c);
+                g2.setClip(null);
+                g2.setColor(AppTheme.SEPARATOR);
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, r, r);
+                g2.dispose();
+            }
+        };
+        JLayer<JPanel> card = new JLayer<>(inner, layerUI);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        wrapper.add(card, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    // ─── Form row helpers ─────────────────────────────────────────────────────
+    private static final int FIELD_H = 38;
+    private static final int NOTES_H = 80;
     private final Map<JPanel, Integer> cardRowIndex = new HashMap<>();
 
     private void addFormRow(JPanel card, String label, JComponent field) {
         boolean isNotes = (field instanceof JTextArea) || (field instanceof JScrollPane);
-
         int rowIdx = cardRowIndex.getOrDefault(card, 0);
         cardRowIndex.put(card, rowIdx + 1);
 
@@ -960,13 +1175,11 @@ public class CounterStaffCreateAppointment extends JPanel {
         lbl.setPreferredSize(new Dimension(200, isNotes ? NOTES_H : FIELD_H));
 
         GridBagConstraints gbcLbl = new GridBagConstraints();
-        gbcLbl.gridx   = 0;
-        gbcLbl.gridy   = rowIdx;
-        gbcLbl.fill    = GridBagConstraints.NONE;
-        gbcLbl.anchor  = isNotes ? GridBagConstraints.NORTHWEST : GridBagConstraints.WEST;
-        gbcLbl.insets  = new Insets(5, 0, 5, 12);
+        gbcLbl.gridx = 0; gbcLbl.gridy = rowIdx;
+        gbcLbl.fill = GridBagConstraints.NONE;
+        gbcLbl.anchor = isNotes ? GridBagConstraints.NORTHWEST : GridBagConstraints.WEST;
+        gbcLbl.insets = new Insets(5, 0, 5, 12);
 
-        // Lock field height — skip JScrollPane since it manages its own size via overrides
         if (!(field instanceof JScrollPane)) {
             int fh = isNotes ? NOTES_H : FIELD_H;
             field.setPreferredSize(new Dimension(field.getPreferredSize().width, fh));
@@ -975,24 +1188,18 @@ public class CounterStaffCreateAppointment extends JPanel {
         }
 
         GridBagConstraints gbcField = new GridBagConstraints();
-        gbcField.gridx   = 1;
-        gbcField.gridy   = rowIdx;
-        gbcField.fill    = GridBagConstraints.HORIZONTAL;
-        gbcField.weightx = 1.0;
-        gbcField.weighty = 0.0;
-        gbcField.insets  = new Insets(5, 0, 5, 0);
-        gbcField.anchor  = isNotes ? GridBagConstraints.NORTH : GridBagConstraints.CENTER;
+        gbcField.gridx = 1; gbcField.gridy = rowIdx;
+        gbcField.fill = GridBagConstraints.HORIZONTAL;
+        gbcField.weightx = 1.0; gbcField.weighty = 0.0;
+        gbcField.insets = new Insets(5, 0, 5, 0);
+        gbcField.anchor = isNotes ? GridBagConstraints.NORTH : GridBagConstraints.CENTER;
 
         card.add(lbl,   gbcLbl);
         card.add(field, gbcField);
 
-        // Add/update a filler row at the bottom that absorbs all extra vertical space
-        // so rows above it never stretch
         GridBagConstraints gbcFiller = new GridBagConstraints();
-        gbcFiller.gridx   = 0;
-        gbcFiller.gridy   = rowIdx + 1;
-        gbcFiller.gridwidth = 2;
-        gbcFiller.fill    = GridBagConstraints.VERTICAL;
+        gbcFiller.gridx = 0; gbcFiller.gridy = rowIdx + 1;
+        gbcFiller.gridwidth = 2; gbcFiller.fill = GridBagConstraints.VERTICAL;
         gbcFiller.weighty = 1.0;
         card.add(Box.createVerticalGlue(), gbcFiller);
     }
@@ -1008,19 +1215,14 @@ public class CounterStaffCreateAppointment extends JPanel {
         JPanel outer = createCard();
         outer.setLayout(new BorderLayout());
         outer.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Title label at the top of the card
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(AppTheme.FONT_SMALL_BOLD);
         titleLabel.setForeground(AppTheme.TEXT_SECONDARY);
         titleLabel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(10, AppTheme.PADDING_CARD, 10, AppTheme.PADDING_CARD)
-        ));
-
+            BorderFactory.createEmptyBorder(10, AppTheme.PADDING_CARD, 10, AppTheme.PADDING_CARD)));
         outer.add(titleLabel, BorderLayout.NORTH);
         outer.add(inner,      BorderLayout.CENTER);
-
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1030,16 +1232,13 @@ public class CounterStaffCreateAppointment extends JPanel {
 
     private JPanel createCard() {
         JPanel card = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(AppTheme.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
-                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
                 g2.setColor(AppTheme.BORDER_CARD);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
-                    AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, AppTheme.RADIUS_CARD * 2, AppTheme.RADIUS_CARD * 2);
                 g2.dispose();
             }
         };
