@@ -580,7 +580,14 @@ public class MonthlyReportsPage extends JPanel {
         // ── Stat cards ─────────────────────────────────────────────────────
 
         // Total appointments this month
-        lblTotalAppt.setText(String.valueOf(monthAppts.size()));
+        long activeCount = monthAppts.stream()
+        	    .filter(a -> {
+        	        String s = a.getStatus().trim();
+        	        return s.equals("Completed") || s.equals("Paid")
+        	            || s.equals("Pending")   || s.equals("Approved");
+        	    })
+        	    .count();
+        	lblTotalAppt.setText(String.valueOf(activeCount));
 
         // Total revenue this month
         double totalRev = monthPayments.stream()
