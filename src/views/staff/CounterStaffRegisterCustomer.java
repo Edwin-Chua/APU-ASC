@@ -28,7 +28,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
     }
 
     private static final String[] COLS = {
-        "", "Customer ID", "Username", "Email", "Contact No.", "Status", "Registered Date", "Action", ""
+        "", "Customer ID", "Customer Name", "Email", "Contact No.", "Status", "Registered Date", "Action", ""
     };
 
     public CounterStaffRegisterCustomer(MainFrame frame) {
@@ -406,7 +406,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
 	    body.add(sub);
 	    body.add(Box.createRigidArea(new Dimension(0, 18)));
 	
-	    JTextField     tfName  = buildFormField(body, "USERNAME",          "e.g. John Doe");
+	    JTextField     tfName  = buildFormField(body, "CUSTOMER NAME",          "e.g. John Doe");
 	    JTextField     tfEmail = buildFormField(body, "EMAIL ADDRESS",     "e.g. john@email.com");
 	    JTextField     tfPhone = buildFormField(body, "CONTACT NUMBER",    "e.g. 0123456789");
 	
@@ -534,7 +534,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
 	    body.add(idRow);
 	    body.add(Box.createRigidArea(new Dimension(0, 18)));
 	
-	    JTextField tfName  = buildFormField(body, "USERNAME",       "Full name");
+	    JTextField tfName  = buildFormField(body, "CUSTOMER NAME",       "Full name");
 	    JTextField tfEmail = buildFormField(body, "EMAIL ADDRESS",  "Email address");
 	    JTextField tfPhone = buildFormField(body, "CONTACT NUMBER", "e.g. 0123456789");
 	    tfName.setText(currentUsername);
