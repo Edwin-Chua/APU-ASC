@@ -872,31 +872,47 @@ public final class UIComponent {
             this.selectedDate = initialDate;
             setLayout(new BorderLayout(0, 0));
             setOpaque(false);
- 
+
             // Plain text field — no icon, just click to open
-            textField = createTextField("Select date...");
-            textField.setText(selectedDate != null ? selectedDate.format(FMT) : "");
+            textField = createTextField("dd/MM/yyyy");
             textField.setEditable(false);
             textField.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            if (selectedDate != null) {
+                textField.setText(selectedDate.format(FMT));
+                textField.setForeground(AppTheme.TEXT_PRIMARY);
+            } else {
+                textField.setText("dd/MM/yyyy");
+                textField.setForeground(AppTheme.TEXT_MUTED);
+            }
+
             textField.addMouseListener(new MouseAdapter() {
                 @Override public void mouseClicked(MouseEvent e) { openPopup(); }
             });
- 
+
             add(textField, BorderLayout.CENTER);
         }
  
         // ── Public API ────────────────────────────────────────────────────────
  
         /** Returns the selected date as dd/MM/yyyy, or empty string if none */
-        public String getText() { return textField.getText(); }
- 
+        public String getText() {
+            String t = textField.getText();
+            return (t.equals("dd/MM/yyyy") || t.isEmpty()) ? "" : t;
+        } 
         /** Returns the selected date as a LocalDate, or null if none */
         public LocalDate getDate() { return selectedDate; }
  
         /** Sets the date and updates the field; pass null to clear */
         public void setDate(LocalDate date) {
             this.selectedDate = date;
-            textField.setText(date != null ? date.format(FMT) : "");
+            if (date != null) {
+                textField.setText(date.format(FMT));
+                textField.setForeground(AppTheme.TEXT_PRIMARY);
+            } else {
+                textField.setText("dd/MM/yyyy");
+                textField.setForeground(AppTheme.TEXT_MUTED);
+            }
             if (changeListener != null) changeListener.onDateChanged(date);
         }
  

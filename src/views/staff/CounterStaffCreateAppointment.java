@@ -80,6 +80,29 @@ public class CounterStaffCreateAppointment extends JPanel {
     }
 
     public void setStaffId(String id) { this.staffId = id; }
+    
+    /** Called by the dashboard whenever this page becomes visible. */
+    public void refresh() {
+        // Fetch data off the EDT so we always get the latest from DB,
+        // then update all UI components back on the EDT
+        new Thread(() -> {
+            List<Appointment> appts = appointmentDAO.getAllAppointments();
+            java.util.List<String[]> customers = customerDAO.getApprovedCustomers();
+
+            SwingUtilities.invokeLater(() -> {
+                // Customers
+                customerCombo.removeAllItems();
+                customerCombo.addItem("-- Select Registered Customer --");
+                for (String[] c : customers)
+                    customerCombo.addItem(c[0].trim() + " — " + c[2].trim());
+
+                // Tech status, slots, tech combo
+                refreshTechStatus();
+                refreshSlots(appts);
+                refreshTechCombo(appts);
+            });
+        }, "create-appt-refresh").start();
+    }
 
     // ─── Page header ──────────────────────────────────────────────────────────
     private JPanel buildHeader() {
@@ -378,33 +401,43 @@ public class CounterStaffCreateAppointment extends JPanel {
 
     // ─── Technician status panel ───────────────────────────────────────────────
     private void refreshTechStatus() {
-        techStatusPanel.removeAll();
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        LocalTime now = LocalTime.now();
-        LocalTime workStart = LocalTime.of(8, 0);
-        LocalTime workEnd   = LocalTime.of(17, 0);
-        boolean outOfHours  = now.isBefore(workStart) || !now.isBefore(workEnd);
+        new Thread(() -> {
+            String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalTime now = LocalTime.now();
+            LocalTime workStart = LocalTime.of(8, 0);
+            LocalTime workEnd   = LocalTime.of(17, 0);
+            boolean outOfHours  = now.isBefore(workStart) || !now.isBefore(workEnd);
 
-        Set<String> busyNowIds = new HashSet<>();
-        if (!outOfHours) {
-            for (Appointment a : appointmentDAO.getAllAppointments()) {
-                if (!a.getAppointmentDate().equals(today)) continue;
-                if (!a.getStatus().equalsIgnoreCase("Approved")) continue;
-                if (a.getTechnicianId() == null || a.getTechnicianId().equalsIgnoreCase("N/A")) continue;
-                try {
-                    LocalTime start = LocalTime.parse(a.getTimeSlot().trim(), DateTimeFormatter.ofPattern("hh:mm a"));
-                    int hours = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
-                    if (!now.isBefore(start) && now.isBefore(start.plusHours(hours))) busyNowIds.add(a.getTechnicianId());
-                } catch (Exception ignored) {}
+            Set<String> busyNowIds = new HashSet<>();
+            if (!outOfHours) {
+                for (Appointment a : appointmentDAO.getAllAppointments()) {
+                    if (!a.getAppointmentDate().equals(today)) continue;
+                    if (!a.getStatus().equalsIgnoreCase("Approved")) continue;
+                    if (a.getTechnicianId() == null || a.getTechnicianId().equalsIgnoreCase("N/A")) continue;
+                    try {
+                        LocalTime start = LocalTime.parse(a.getTimeSlot().trim(),
+                            DateTimeFormatter.ofPattern("hh:mm a"));
+                        int hours = "ST002".equals(a.getServiceTypeId()) ? 3 : 1;
+                        if (!now.isBefore(start) && now.isBefore(start.plusHours(hours)))
+                            busyNowIds.add(a.getTechnicianId());
+                    } catch (Exception ignored) {}
+                }
             }
-        }
-        for (Technician t : technicianDAO.getAllTechnicians()) {
-            String status = outOfHours ? "Unavailable" : busyNowIds.contains(t.getTechnicianId()) ? "Busy" : "Available";
-            techStatusPanel.add(buildTechStatusRow(t, status));
-            techStatusPanel.add(Box.createRigidArea(new Dimension(0, 6)));
-        }
-        techStatusPanel.revalidate();
-        techStatusPanel.repaint();
+            List<Technician> techs = technicianDAO.getAllTechnicians();
+            boolean isOutOfHours = outOfHours;
+
+            SwingUtilities.invokeLater(() -> {
+                techStatusPanel.removeAll();
+                for (Technician t : techs) {
+                    String status = isOutOfHours ? "Unavailable"
+                        : busyNowIds.contains(t.getTechnicianId()) ? "Busy" : "Available";
+                    techStatusPanel.add(buildTechStatusRow(t, status));
+                    techStatusPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+                }
+                techStatusPanel.revalidate();
+                techStatusPanel.repaint();
+            });
+        }, "tech-status-refresh").start();
     }
 
     private JPanel buildTechStatusRow(Technician t, String status) {

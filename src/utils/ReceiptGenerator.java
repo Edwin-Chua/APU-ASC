@@ -6,11 +6,6 @@ import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-/**
- * ReceiptGenerator — No external library required.
- * Generates a styled HTML receipt and opens it in the default browser.
- * Staff can then use Ctrl+P → Save as PDF.
- */
 public class ReceiptGenerator {
 
     /**
@@ -175,7 +170,7 @@ public class ReceiptGenerator {
             + "                     background: #F9FAFB; width: 18%; }\n"
             + "  .info-table tr.alt td { background: #F3F4F6; }\n"
             + "  .info-table tr.alt .lbl { background: #EAECEF; }\n"
-            + "  .paid { color: #10B981; font-weight: 700; }\n"
+            + "  .paid { color: #08a623; font-weight: 700; }\n"
 
             + "  /* Charge table */\n"
             + "  .charge-table { width: 100%; border-collapse: collapse; font-size: 13px; }\n"
@@ -194,7 +189,7 @@ public class ReceiptGenerator {
             + "  .total-amt { font-size: 18px; }\n"
 
             + "  /* Footer */\n"
-            + "  .footer { font-size: 11px; color: #9CA3AF; text-align: center; margin-bottom: 4px; }\n"
+            + "  .footer { font-size: 11px; color: #787e8a; text-align: center; margin-bottom: 4px; }\n"
             + "  .print-hint { font-size: 12px; color: #6B7280; text-align: center;\n"
             + "                margin-top: 16px; padding: 10px;\n"
             + "                background: #FFFBEB; border-radius: 6px; }\n"

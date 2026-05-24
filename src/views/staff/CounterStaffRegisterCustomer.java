@@ -22,6 +22,10 @@ public class CounterStaffRegisterCustomer extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextField searchField;
+    private Runnable onDataChanged;    
+    public void setOnDataChanged(Runnable callback) {
+        this.onDataChanged = callback;
+    }
 
     private static final String[] COLS = {
         "", "Customer ID", "Username", "Email", "Contact No.", "Status", "Registered Date", "Action", ""
@@ -46,10 +50,12 @@ public class CounterStaffRegisterCustomer extends JPanel {
         wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
         wrapper.setOpaque(false);
 
-        JLabel title = UIComponent.createPageTitle("Register Customer");
-        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
+        JLabel title = UIComponent.createPageTitle("Customer Management");
+        JLabel sub   = UIComponent.createCaptionLabel("View, Manage, Create Customer");
+        sub.setBorder(BorderFactory.createEmptyBorder(4, 0, 20, 0));
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         wrapper.add(title);
+        wrapper.add(sub);
 
         JPanel actions = new JPanel(new BorderLayout(8, 0));
         actions.setOpaque(false);
@@ -154,7 +160,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
         cm.getColumn(2).setPreferredWidth(140);
         cm.getColumn(3).setPreferredWidth(190);
         cm.getColumn(4).setPreferredWidth(130);
-        cm.getColumn(5).setMinWidth(130); cm.getColumn(5).setPreferredWidth(140);
+        cm.getColumn(5).setPreferredWidth(120);
         cm.getColumn(6).setPreferredWidth(130);
         cm.getColumn(7).setMinWidth(60);  cm.getColumn(7).setMaxWidth(60);
         cm.getColumn(8).setMinWidth(90);  cm.getColumn(8).setMaxWidth(90);
@@ -339,6 +345,7 @@ public class CounterStaffRegisterCustomer extends JPanel {
                     || username.toLowerCase().contains(q) || email.toLowerCase().contains(q))
                 tableModel.addRow(new Object[]{Boolean.FALSE, id, username, email, contact, status, date, "", ""});
         }
+        if (onDataChanged != null) onDataChanged.run();
     }
 
     // ─── Delete selected ──────────────────────────────────────────────────────
@@ -373,173 +380,235 @@ public class CounterStaffRegisterCustomer extends JPanel {
 
     // ─── Add Customer dialog ──────────────────────────────────────────────────
 
-    private void showAddCustomerDialog() {
-        Window owner = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setUndecorated(true);
-        dialog.setBackground(new Color(0, 0, 0, 0));
+// ─── Add Customer dialog ──────────────────────────────────────────────────
 
-        JPanel root = buildDialogRootCard();
-        root.setLayout(new BorderLayout(0, 10));
-        root.setBorder(BorderFactory.createEmptyBorder(16, 14, 16, 14));
-        root.add(buildDialogHeader("Add New Customer", dialog), BorderLayout.NORTH);
+	private void showAddCustomerDialog() {
+	    Window owner = SwingUtilities.getWindowAncestor(this);
+	    JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+	    dialog.setUndecorated(true);
+	    dialog.setBackground(new Color(0, 0, 0, 0));
+	
+	    JPanel root = buildDialogRootCard();
+	    root.setLayout(new BorderLayout(0, 0));
+	    root.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+	
+	    // ── Header ────────────────────────────────────────────────────────────
+	    root.add(buildDialogHeader("Add New Customer", dialog), BorderLayout.NORTH);
+	
+	    // ── Scrollable body ───────────────────────────────────────────────────
+	    JPanel body = new JPanel();
+	    body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+	    body.setOpaque(false);
+	    body.setBorder(BorderFactory.createEmptyBorder(20, 24, 8, 24));
+	
+	    JLabel sub = UIComponent.createCaptionLabel("Fill in the details below to register a new customer.");
+	    sub.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    body.add(sub);
+	    body.add(Box.createRigidArea(new Dimension(0, 18)));
+	
+	    JTextField     tfName  = buildFormField(body, "USERNAME",          "e.g. John Doe");
+	    JTextField     tfEmail = buildFormField(body, "EMAIL ADDRESS",     "e.g. john@email.com");
+	    JTextField     tfPhone = buildFormField(body, "CONTACT NUMBER",    "e.g. 0123456789");
+	
+	    // Password row
+	    body.add(buildFieldLabel("PASSWORD"));
+	    body.add(Box.createRigidArea(new Dimension(0, 4)));
+	    JPasswordField tfPass   = UIComponent.createPasswordField();
+	    JButton        btnShow1 = buildPasswordToggle(tfPass);
+	    body.add(buildPasswordRow(tfPass, btnShow1));
+	    body.add(Box.createRigidArea(new Dimension(0, 14)));
+	
+	    // Confirm password row
+	    body.add(buildFieldLabel("CONFIRM PASSWORD"));
+	    body.add(Box.createRigidArea(new Dimension(0, 4)));
+	    JPasswordField tfConf  = UIComponent.createPasswordField();
+	    JButton        btnShow2 = buildPasswordToggle(tfConf);
+	    body.add(buildPasswordRow(tfConf, btnShow2));
+	    body.add(Box.createRigidArea(new Dimension(0, 14)));
+	
+	    // Status
+	    body.add(buildFieldLabel("STATUS"));
+	    body.add(Box.createRigidArea(new Dimension(0, 4)));
+	    JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
+	    cbStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    cbStatus.setMaximumSize(new Dimension(385, 38));
+	    body.add(cbStatus);
+	    body.add(Box.createRigidArea(new Dimension(0, 14)));
+	
+	    // Error label
+	    JLabel errLabel = styledErrorLabel();
+	    errLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    body.add(errLabel);
+	
+	    JPanel bodyWrapper = new JPanel(new BorderLayout());
+	    bodyWrapper.setOpaque(false);
+	    bodyWrapper.add(body, BorderLayout.CENTER);
 
-        // ── 2-column GridBag form ─────────────────────────────────────────────
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        int[] r = {0};
+	    JScrollPane scrollPane = new JScrollPane(bodyWrapper);
+	    scrollPane.setBorder(BorderFactory.createEmptyBorder());
+	    scrollPane.setOpaque(true);
+	    scrollPane.getViewport().setOpaque(true);
+	    scrollPane.getViewport().setBackground(AppTheme.BG_CARD);
+	    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+	    root.add(scrollPane, BorderLayout.CENTER);
+	
+	    // ── Footer ────────────────────────────────────────────────────────────
+	    JButton btnCancel = UIComponent.createOutlineButton("Cancel");
+	    JButton btnSave   = UIComponent.createPrimaryButton("Register");
+	    btnCancel.addActionListener(e -> dialog.dispose());
+	    btnSave.addActionListener(e -> {
+	        String username = tfName.getText().trim(), email = tfEmail.getText().trim(),
+	               contact  = tfPhone.getText().trim(), status = (String) cbStatus.getSelectedItem();
+	        String pass = new String(tfPass.getPassword()).trim(),
+	               conf = new String(tfConf.getPassword()).trim();
+	        CustomerRegister reg = new CustomerRegister(username, contact, email, pass, conf);
+	        String err = reg.validate();
+	        if (err != null) { errLabel.setText(err); return; }
+	        String result = customerDAO.registerCustomer(username, pass, contact, email, status);
+	        if (result != null && result.toLowerCase().contains("success")) {
+	            dialog.dispose();
+	            UIComponent.showDialog(this, "Customer Registered", UIComponent.DialogType.SUCCESS,
+	                "\"" + username + "\" has been registered successfully.", null, null);
+	            searchField.setText(""); loadTableData("");
+	        } else { errLabel.setText(result != null ? result : "Registration failed."); }
+	    });
+	    root.add(buildDialogFooter(btnCancel, btnSave), BorderLayout.SOUTH);
+	
+	    dialog.setContentPane(root);
+	    dialog.setPreferredSize(new Dimension(440, 580));
+	    dialog.pack();
+	    dialog.setLocationRelativeTo(owner);
+	    dialog.setVisible(true);
+	}
 
-        addSpan(form, UIComponent.createCaptionLabel("Fill in the details to register a new customer."), r, 10);
 
-        JTextField     tfName  = addRow(form, "Username",         UIComponent.createTextField("Full name"), r);
-        JTextField     tfEmail = addRow(form, "Email",            UIComponent.createTextField("Email address"), r);
-        JTextField     tfPhone = addRow(form, "Contact No.",      UIComponent.createTextField("e.g. 0123456789"), r);
-        JPasswordField tfPass  = addRow(form, "Password",         UIComponent.createPasswordField(), r);
-        JPasswordField tfConf  = addRow(form, "Confirm Password", UIComponent.createPasswordField(), r);
+// ─── Edit Customer dialog ─────────────────────────────────────────────────
 
-        JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
-        sizeField(cbStatus);
-        addRow(form, "Status", cbStatus, r);
+	private void showEditCustomerDialog(String customerId, String currentUsername,
+	        String currentEmail, String currentContact, String currentStatus) {
+	
+	    String existingPassword = customerDAO.getPasswordById(customerId);
+	    if (existingPassword == null) existingPassword = "";
+	
+	    Window owner = SwingUtilities.getWindowAncestor(this);
+	    JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+	    dialog.setUndecorated(true);
+	    dialog.setBackground(new Color(0, 0, 0, 0));
+	
+	    JPanel root = buildDialogRootCard();
+	    root.setLayout(new BorderLayout(0, 0));
+	    root.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+	
+	    // ── Header ────────────────────────────────────────────────────────────
+	    root.add(buildDialogHeader("Edit Customer", dialog), BorderLayout.NORTH);
+	
+	    // ── Scrollable body ───────────────────────────────────────────────────
+	    JPanel body = new JPanel();
+	    body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+	    body.setOpaque(false);
+	    body.setBorder(BorderFactory.createEmptyBorder(20, 24, 8, 24));
+	
+	    // Customer ID badge
+	    JPanel idRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+	    idRow.setOpaque(false);
+	    idRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    idRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+	    JLabel idBadge = new JLabel(customerId) {
+	        @Override protected void paintComponent(Graphics g) {
+	            Graphics2D g2 = (Graphics2D) g.create();
+	            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	            g2.setColor(new Color(0xE6F1FB));
+	            g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+	            g2.dispose();
+	            super.paintComponent(g);
+	        }
+	    };
+	    idBadge.setOpaque(false);
+	    idBadge.setFont(AppTheme.FONT_LABEL);
+	    idBadge.setForeground(new Color(0x0C447C));
+	    idBadge.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 10));
+	    JLabel idHint = UIComponent.createCaptionLabel("  · ID cannot be changed");
+	    idRow.add(idBadge);
+	    idRow.add(idHint);
+	    body.add(idRow);
+	    body.add(Box.createRigidArea(new Dimension(0, 18)));
+	
+	    JTextField tfName  = buildFormField(body, "USERNAME",       "Full name");
+	    JTextField tfEmail = buildFormField(body, "EMAIL ADDRESS",  "Email address");
+	    JTextField tfPhone = buildFormField(body, "CONTACT NUMBER", "e.g. 0123456789");
+	    tfName.setText(currentUsername);
+	    tfEmail.setText(currentEmail);
+	    tfPhone.setText(currentContact);
+	
+	    // Password row with show/hide toggle
+	    body.add(buildFieldLabel("PASSWORD"));
+	    body.add(Box.createRigidArea(new Dimension(0, 4)));
+	    JPasswordField tfPass   = UIComponent.createPasswordField();
+	    tfPass.setText(existingPassword);
+	    tfPass.setEchoChar('•');
+	    JButton btnToggle = buildPasswordToggle(tfPass);
+	    body.add(buildPasswordRow(tfPass, btnToggle));
+	    body.add(Box.createRigidArea(new Dimension(0, 14)));
+	
+	    // Status
+	    body.add(buildFieldLabel("STATUS"));
+	    body.add(Box.createRigidArea(new Dimension(0, 4)));
+	    JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
+	    cbStatus.setSelectedItem(currentStatus);
+	    cbStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    cbStatus.setMaximumSize(new Dimension(385, 38));
+	    body.add(cbStatus);
+	    body.add(Box.createRigidArea(new Dimension(0, 14)));
+	
+	    // Error label
+	    JLabel errLabel = styledErrorLabel();
+	    errLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    body.add(errLabel);
+	
+	    JPanel bodyWrapper = new JPanel(new BorderLayout());
+	    bodyWrapper.setOpaque(false);
+	    bodyWrapper.add(body, BorderLayout.CENTER);
 
-        JLabel errLabel = styledErrorLabel();
-        addSpan(form, errLabel, r, 0);
-
-        root.add(form, BorderLayout.CENTER);
-
-        // ── Footer ────────────────────────────────────────────────────────────
-        JButton btnCancel = UIComponent.createOutlineButton("Cancel");
-        JButton btnSave   = UIComponent.createPrimaryButton("Register");
-        btnCancel.addActionListener(e -> dialog.dispose());
-        btnSave.addActionListener(e -> {
-            String username = tfName.getText().trim(), email = tfEmail.getText().trim(),
-                   contact  = tfPhone.getText().trim(), status = (String) cbStatus.getSelectedItem();
-            String pass = new String(tfPass.getPassword()).trim(),
-                   conf = new String(tfConf.getPassword()).trim();
-            CustomerRegister reg = new CustomerRegister(username, contact, email, pass, conf);
-            String err = reg.validate();
-            if (err != null) { errLabel.setText(err); return; }
-            String result = customerDAO.registerCustomer(username, pass, contact, email, status);
-            if (result != null && result.toLowerCase().contains("success")) {
-                dialog.dispose();
-                UIComponent.showDialog(this, "Customer Registered", UIComponent.DialogType.SUCCESS,
-                    "\"" + username + "\" has been registered successfully.", null, null);
-                searchField.setText(""); loadTableData("");
-            } else { errLabel.setText(result != null ? result : "Registration failed."); }
-        });
-        root.add(buildDialogFooter(btnCancel, btnSave), BorderLayout.SOUTH);
-
-        dialog.setContentPane(root);
-        dialog.pack();
-        dialog.setMinimumSize(new Dimension(300, dialog.getHeight()));
-        dialog.setLocationRelativeTo(owner);
-        dialog.setVisible(true);
-    }
-
-    // ─── Edit Customer dialog ─────────────────────────────────────────────────
-
-    private void showEditCustomerDialog(String customerId, String currentUsername,
-            String currentEmail, String currentContact, String currentStatus) {
-
-        String existingPassword = customerDAO.getPasswordById(customerId);
-        if (existingPassword == null) existingPassword = "";
-
-        Window owner = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setUndecorated(true);
-        dialog.setBackground(new Color(0, 0, 0, 0));
-
-        JPanel root = buildDialogRootCard();
-        root.setLayout(new BorderLayout(0, 10));
-        root.setBorder(BorderFactory.createEmptyBorder(16, 14, 16, 14));
-        root.add(buildDialogHeader("Edit Customer", dialog), BorderLayout.NORTH);
-
-        // ── 2-column GridBag form ─────────────────────────────────────────────
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        int[] r = {0};
-
-        // Read-only ID badge row
-        JPanel idRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        idRow.setOpaque(false);
-        JLabel idBadge = new JLabel(customerId) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(0xE6F1FB));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        idBadge.setOpaque(false);
-        idBadge.setFont(AppTheme.FONT_LABEL);
-        idBadge.setForeground(new Color(0x0C447C));
-        idBadge.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 10));
-        idRow.add(idBadge);
-        idRow.add(UIComponent.createCaptionLabel("  · ID cannot be changed"));
-        addSpan(form, idRow, r, 10);
-
-        JTextField tfName  = addRow(form, "Username",   UIComponent.createTextField("Full name"), r);
-        JTextField tfEmail = addRow(form, "Email",      UIComponent.createTextField("Email address"), r);
-        JTextField tfPhone = addRow(form, "Contact No.", UIComponent.createTextField("e.g. 0123456789"), r);
-        tfName.setText(currentUsername);
-        tfEmail.setText(currentEmail);
-        tfPhone.setText(currentContact);
-
-        // Password row with show/hide toggle
-        JPasswordField tfPass = UIComponent.createPasswordField();
-        tfPass.setText(existingPassword);
-        tfPass.setEchoChar('•');
-        JButton btnToggle = buildPasswordToggle(tfPass);
-        btnToggle.setPreferredSize(new Dimension(34, 34));
-        JPanel passPanel = new JPanel(new BorderLayout(4, 0));
-        passPanel.setOpaque(false);
-        passPanel.setPreferredSize(new Dimension(200, 34));
-        passPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        passPanel.add(tfPass,    BorderLayout.CENTER);
-        passPanel.add(btnToggle, BorderLayout.EAST);
-        addRow(form, "Password", passPanel, r);
-
-        JComboBox<String> cbStatus = UIComponent.createComboBox(new String[]{"Pending", "Approved"});
-        cbStatus.setSelectedItem(currentStatus);
-        sizeField(cbStatus);
-        addRow(form, "Status", cbStatus, r);
-
-        JLabel errLabel = styledErrorLabel();
-        addSpan(form, errLabel, r, 0);
-
-        root.add(form, BorderLayout.CENTER);
-
-        // ── Footer ────────────────────────────────────────────────────────────
-        JButton btnCancel = UIComponent.createOutlineButton("Cancel");
-        JButton btnSave   = UIComponent.createPrimaryButton("Save Changes");
-        btnCancel.addActionListener(e -> dialog.dispose());
-        btnSave.addActionListener(e -> {
-            String username = tfName.getText().trim(), email = tfEmail.getText().trim(),
-                   contact  = tfPhone.getText().trim(), status = (String) cbStatus.getSelectedItem(),
-                   password = new String(tfPass.getPassword()).trim();
-            if (username.isEmpty()) { errLabel.setText("Username cannot be empty."); return; }
-            if (email.isEmpty())    { errLabel.setText("Email cannot be empty."); return; }
-            if (contact.isEmpty())  { errLabel.setText("Contact number cannot be empty."); return; }
-            if (password.isEmpty()) { errLabel.setText("Password cannot be empty."); return; }
-            if (customerDAO.emailExistsExcluding(email, customerId)) {
-                errLabel.setText("Another account with this email already exists."); return;
-            }
-            if (customerDAO.updateCustomer(customerId, username, password, contact, email, status)) {
-                dialog.dispose();
-                UIComponent.showDialog(this, "Changes Saved", UIComponent.DialogType.SUCCESS,
-                    "Customer \"" + username + "\" updated successfully.", null, null);
-                loadTableData(searchField.getText().trim());
-            } else { errLabel.setText("Update failed. Please try again."); }
-        });
-        root.add(buildDialogFooter(btnCancel, btnSave), BorderLayout.SOUTH);
-
-        dialog.setContentPane(root);
-        dialog.pack();
-        dialog.setMinimumSize(new Dimension(300, dialog.getHeight()));
-        dialog.setLocationRelativeTo(owner);
-        dialog.setVisible(true);
-    }
+	    JScrollPane scrollPane = new JScrollPane(bodyWrapper);
+	    scrollPane.setBorder(BorderFactory.createEmptyBorder());
+	    scrollPane.setOpaque(true);
+	    scrollPane.getViewport().setOpaque(true);
+	    scrollPane.getViewport().setBackground(AppTheme.BG_CARD);
+	    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+	    root.add(scrollPane, BorderLayout.CENTER);
+	
+	    // ── Footer ────────────────────────────────────────────────────────────
+	    JButton btnCancel = UIComponent.createOutlineButton("Cancel");
+	    JButton btnSave   = UIComponent.createPrimaryButton("Save Changes");
+	    btnCancel.addActionListener(e -> dialog.dispose());
+	    btnSave.addActionListener(e -> {
+	        String username = tfName.getText().trim(), email = tfEmail.getText().trim(),
+	               contact  = tfPhone.getText().trim(), status = (String) cbStatus.getSelectedItem(),
+	               password = new String(tfPass.getPassword()).trim();
+	        if (username.isEmpty()) { errLabel.setText("Username cannot be empty."); return; }
+	        if (email.isEmpty())    { errLabel.setText("Email cannot be empty."); return; }
+	        if (contact.isEmpty())  { errLabel.setText("Contact number cannot be empty."); return; }
+	        if (password.isEmpty()) { errLabel.setText("Password cannot be empty."); return; }
+	        if (customerDAO.emailExistsExcluding(email, customerId)) {
+	            errLabel.setText("Another account with this email already exists."); return;
+	        }
+	        if (customerDAO.updateCustomer(customerId, username, password, contact, email, status)) {
+	            dialog.dispose();
+	            UIComponent.showDialog(this, "Changes Saved", UIComponent.DialogType.SUCCESS,
+	                "Customer \"" + username + "\" updated successfully.", null, null);
+	            loadTableData(searchField.getText().trim());
+	        } else { errLabel.setText("Update failed. Please try again."); }
+	    });
+	    root.add(buildDialogFooter(btnCancel, btnSave), BorderLayout.SOUTH);
+	
+	    dialog.setContentPane(root);
+	    dialog.setPreferredSize(new Dimension(440, 540));
+	    dialog.pack();
+	    dialog.setLocationRelativeTo(owner);
+	    dialog.setVisible(true);
+	}
 
     // ─── Dialog helpers ───────────────────────────────────────────────────────
 
@@ -559,41 +628,101 @@ public class CounterStaffRegisterCustomer extends JPanel {
         return root;
     }
 
-    private JPanel buildDialogHeader(String title, JDialog dialog) {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-        header.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(0, 0, 8, 0)));
-        JLabel titleLbl = new JLabel(title);
-        titleLbl.setFont(AppTheme.FONT_BODY_BOLD);
-        titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
-        JButton btnX = new JButton("✕");
-        btnX.setFont(AppTheme.FONT_SMALL_BOLD);
-        btnX.setForeground(AppTheme.TEXT_MUTED);
-        btnX.setContentAreaFilled(false);
-        btnX.setBorderPainted(false);
-        btnX.setFocusPainted(false);
-        btnX.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnX.addActionListener(e -> dialog.dispose());
-        btnX.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { btnX.setForeground(AppTheme.DANGER); }
-            @Override public void mouseExited(MouseEvent e)  { btnX.setForeground(AppTheme.TEXT_MUTED); }
-        });
-        header.add(titleLbl, BorderLayout.WEST);
-        header.add(btnX,     BorderLayout.EAST);
-        return header;
-    }
+	private JPanel buildDialogHeader(String title, JDialog dialog) {
+	    JPanel header = new JPanel(new BorderLayout(12, 0));
+	    header.setOpaque(false);
+	    header.setBorder(BorderFactory.createCompoundBorder(
+	        BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.SEPARATOR),
+	        BorderFactory.createEmptyBorder(16, 24, 16, 16)));
+	
+	    // Accent bar + title grouped
+	    JPanel titleRow = new JPanel();
+	    titleRow.setLayout(new BoxLayout(titleRow, BoxLayout.X_AXIS));
+	    titleRow.setOpaque(false);
+	
+	    JPanel accentBar = new JPanel();
+	    accentBar.setBackground(AppTheme.PRIMARY);
+	    accentBar.setOpaque(true);
+	    accentBar.setMinimumSize(new Dimension(3, 20));
+	    accentBar.setPreferredSize(new Dimension(3, 20));
+	    accentBar.setMaximumSize(new Dimension(3, 20));
+	
+	    JLabel titleLbl = new JLabel(title);
+	    titleLbl.setFont(AppTheme.FONT_BODY_BOLD);
+	    titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
+	    titleLbl.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+	
+	    titleRow.add(accentBar);
+	    titleRow.add(titleLbl);
+	
+	    // Close button
+	    JButton btnX = new JButton("✕");
+	    btnX.setFont(AppTheme.FONT_SMALL_BOLD);
+	    btnX.setForeground(AppTheme.TEXT_MUTED);
+	    btnX.setContentAreaFilled(false);
+	    btnX.setBorderPainted(false);
+	    btnX.setFocusPainted(false);
+	    btnX.setCursor(new Cursor(Cursor.HAND_CURSOR));
+	    btnX.addActionListener(e -> dialog.dispose());
+	    btnX.addMouseListener(new MouseAdapter() {
+	        @Override public void mouseEntered(MouseEvent e) { btnX.setForeground(AppTheme.DANGER); }
+	        @Override public void mouseExited(MouseEvent e)  { btnX.setForeground(AppTheme.TEXT_MUTED); }
+	    });
+	
+	    header.add(titleRow, BorderLayout.WEST);
+	    header.add(btnX,     BorderLayout.EAST);
+	    return header;
+	}
 
     private JPanel buildDialogFooter(JButton cancel, JButton primary) {
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.SEPARATOR),
-            BorderFactory.createEmptyBorder(8, 0, 0, 0)));
+            BorderFactory.createEmptyBorder(14, 24, 16, 24)));
+
+        cancel.setPreferredSize(new Dimension(100, 38));
+        cancel.setMaximumSize(new Dimension(100, 38));
+        primary.setPreferredSize(new Dimension(140, 38));
+        primary.setMaximumSize(new Dimension(140, 38));
+
         footer.add(cancel);
         footer.add(primary);
         return footer;
+    }
+    
+    /** Creates a full-width stacked label + text field and adds it to the given panel. */
+    private JTextField buildFormField(JPanel body, String labelText, String placeholder) {
+        body.add(buildFieldLabel(labelText));
+        body.add(Box.createRigidArea(new Dimension(0, 4)));
+        JTextField field = UIComponent.createTextField(placeholder);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(385, 38));
+        body.add(field);
+        body.add(Box.createRigidArea(new Dimension(0, 14)));
+        return field;
+    }
+
+    /** Uppercased muted field label consistent with Payment Details style. */
+    private JLabel buildFieldLabel(String text) {
+        JLabel lbl = UIComponent.createFieldLabel(text);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, 18));
+        return lbl;
+    }
+
+    /** Password field + show/hide button in a full-width row. */
+    private JPanel buildPasswordRow(JPasswordField field, JButton toggleBtn) {
+        JPanel row = new JPanel(new BorderLayout(6, 0));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(385, 38));
+        toggleBtn.setPreferredSize(new Dimension(75, 38));
+        toggleBtn.setMaximumSize(new Dimension(75, 38));
+        field.setMaximumSize(new Dimension(310, 38));
+        row.add(field,     BorderLayout.CENTER);
+        row.add(toggleBtn, BorderLayout.EAST);
+        return row;
     }
 
     /**

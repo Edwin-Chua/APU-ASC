@@ -28,6 +28,7 @@ public class CounterStaffBilling extends JPanel {
     private static final String[] APPT_COLUMNS =
         {"Appt ID", "Customer ID", "Vehicle Plate", "Service Item", "Date", "Status"};
 
+    private JTextField                  searchField;
     private JComboBox<String>           filterStatus;
     private UIComponent.DatePickerField filterDateField;
     private JLabel                      countLabel;
@@ -35,6 +36,8 @@ public class CounterStaffBilling extends JPanel {
     private JTable                      apptTable;
 
     private List<Appointment> displayedAppointments;
+
+    private JScrollPane tableScrollPane;   // inner scroll pane for the appt table
 
     private JPanel formPanel;
     private JLabel formApptIdLabel;
@@ -50,38 +53,48 @@ public class CounterStaffBilling extends JPanel {
     public CounterStaffBilling(MainFrame frame) {
         setLayout(new BorderLayout());
         setBackground(AppTheme.BG_PAGE);
-        JPanel content = buildContent();
-        JScrollPane scroll = UIComponent.createAppleScrollPane(new JScrollPane(content));
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        add(scroll, BorderLayout.CENTER);
+        add(buildContent(), BorderLayout.CENTER);
     }
 
     public void setStaffId(String staffId) { this.selectedStaffId = staffId; }
+    private Runnable onDataChanged;    
+    public void setOnDataChanged(Runnable callback) {
+        this.onDataChanged = callback;
+    }
     public void refresh()                  { applyFilter(); }
 
     // ─── Content ──────────────────────────────────────────────────────────────
 
     private JPanel buildContent() {
-        JPanel root = new JPanel();
-        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
+        JPanel root = new JPanel(new BorderLayout(0, 0));
         root.setBackground(AppTheme.BG_PAGE);
-        root.setBorder(BorderFactory.createEmptyBorder(
+        setBorder(BorderFactory.createEmptyBorder(
             AppTheme.PADDING_PAGE, AppTheme.PADDING_PAGE,
             AppTheme.PADDING_PAGE, AppTheme.PADDING_PAGE));
+
+        // ── Header ────────────────────────────────────────────────────────────
+        JPanel header = new JPanel();
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setOpaque(false);
+        header.setBorder(BorderFactory.createEmptyBorder(0, 0, AppTheme.GAP_SECTION, 0));
 
         JLabel title = UIComponent.createPageTitle("Billing");
         JLabel sub   = UIComponent.createCaptionLabel("Select an appointment to process payment");
         sub.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+        header.add(title);
+        header.add(sub);
 
-        root.add(title);
-        root.add(sub);
-        root.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
-        root.add(buildApptSection());
-        root.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
+        // ── Centre: table card + form panel stacked ───────────────────────────
+        JPanel centre = new JPanel(new BorderLayout(0, 16));
+        centre.setOpaque(false);
+        centre.add(buildApptSection(), BorderLayout.CENTER);
 
         formPanel = buildPaymentForm();
         formPanel.setVisible(false);
-        root.add(formPanel);
+        centre.add(formPanel, BorderLayout.SOUTH);
+
+        root.add(header, BorderLayout.NORTH);
+        root.add(centre, BorderLayout.CENTER);
         return root;
     }
 
@@ -93,36 +106,77 @@ public class CounterStaffBilling extends JPanel {
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
         toolbar.setOpaque(false);
 
+        final String PLACEHOLDER = "Search by ID, Customer or Plate";
+        searchField = new JTextField() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 22, 22);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0, 0, 0, 50));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 22, 22);
+                g2.dispose();
+            }
+        };
+        searchField.putClientProperty("caretWidth", 2);
+        searchField.setFont(AppTheme.FONT_SMALL);
+        searchField.setForeground(AppTheme.TEXT_MUTED);
+        searchField.setBackground(AppTheme.BG_CARD);
+        searchField.setOpaque(false);
+        searchField.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 14));
+        searchField.setPreferredSize(new Dimension(240, 38));
+        searchField.setText(PLACEHOLDER);
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals(PLACEHOLDER)) {
+                    searchField.setText("");
+                    searchField.setForeground(AppTheme.TEXT_PRIMARY);
+                }
+            }
+            @Override public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(PLACEHOLDER);
+                    searchField.setForeground(AppTheme.TEXT_MUTED);
+                }
+            }
+        });
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+        });
+
         JPanel filterRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         filterRow.setOpaque(false);
 
-        JLabel lblFilter = new JLabel("Filter:");
-        lblFilter.setFont(AppTheme.FONT_SMALL);
-        lblFilter.setForeground(AppTheme.TEXT_SECONDARY);
-
-        filterStatus = UIComponent.createComboBox(new String[]{"All", "Completed", "Paid"});
+        filterStatus = UIComponent.createComboBox(new String[]{"All Status", "Completed", "Paid"});
         filterStatus.setPreferredSize(new Dimension(142, 38));
-
-        JLabel lblDate = new JLabel("Date:");
-        lblDate.setFont(AppTheme.FONT_SMALL);
-        lblDate.setForeground(AppTheme.TEXT_SECONDARY);
+        filterStatus.addActionListener(e -> applyFilter());
 
         filterDateField = UIComponent.createDatePicker(null);
         filterDateField.setPreferredSize(new Dimension(120, 38));
-
-        JButton btnFilter = UIComponent.createSmallButton("Filter");
-        btnFilter.setPreferredSize(new Dimension(72, 34));
-        btnFilter.addActionListener(e -> applyFilter());
+        filterDateField.addDateChangeListener(d -> applyFilter());
 
         JButton btnRefresh = UIComponent.createSmallButton("↺ Refresh");
         btnRefresh.setPreferredSize(new Dimension(95, 34));
-        btnRefresh.addActionListener(e -> { filterStatus.setSelectedIndex(0); filterDateField.setDate(null); applyFilter(); });
+        btnRefresh.addActionListener(e -> {
+            searchField.setText(PLACEHOLDER);
+            searchField.setForeground(AppTheme.TEXT_MUTED);
+            filterStatus.setSelectedIndex(0);
+            filterDateField.setDate(null);
+            applyFilter();
+        });
 
-        filterRow.add(lblFilter);
+        filterRow.add(searchField);
         filterRow.add(filterStatus);
-        filterRow.add(lblDate);
         filterRow.add(filterDateField);
-        filterRow.add(btnFilter);
         filterRow.add(btnRefresh);
 
         countLabel = new JLabel("Loading…");
@@ -260,6 +314,7 @@ public class CounterStaffBilling extends JPanel {
                 if (row >= 0) {
                     String status = tableModel.getValueAt(row, 5).toString();
                     if ("Paid".equalsIgnoreCase(status)) {
+                        setTableCompact(false);
                         formPanel.setVisible(false);
                         String apptId = tableModel.getValueAt(row, 0).toString();
                         Payment existingPayment = paymentDAO.getPaymentByAppointmentId(apptId);
@@ -312,6 +367,7 @@ public class CounterStaffBilling extends JPanel {
 
         // ── JLayer rounded card: header + scroll + status bar ─────────────────
         JScrollPane scroll = new JScrollPane(apptTable);
+        tableScrollPane = scroll;
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setOpaque(true);
         scroll.setBackground(AppTheme.BG_CARD);
@@ -369,6 +425,9 @@ public class CounterStaffBilling extends JPanel {
         tableModel.setRowCount(0);
         String statusFilter = (String) filterStatus.getSelectedItem();
         String dateFilter   = filterDateField.getText().trim();
+        String searchRaw    = searchField != null ? searchField.getText().trim() : "";
+        String searchQuery  = (searchRaw.equals("Search by ID, Customer or Plate") || searchRaw.isEmpty())
+                              ? "" : searchRaw.toLowerCase();
 
         String isoDate = "";
         if (!dateFilter.isEmpty()) {
@@ -392,18 +451,27 @@ public class CounterStaffBilling extends JPanel {
         for (Appointment a : displayedAppointments) {
             String status = a.getStatus();
             if ("Completed".equalsIgnoreCase(status)) completedCount++;
-            boolean matchStatus = "All".equals(statusFilter) || status.equalsIgnoreCase(statusFilter);
+            boolean matchStatus = "All Status".equals(statusFilter) || status.equalsIgnoreCase(statusFilter);
             boolean matchDate   = isoDate.isEmpty() || a.getAppointmentDate().equals(isoDate);
-            if (matchStatus && matchDate) {
-                tableModel.addRow(new Object[]{
-                    a.getAppointmentId(), a.getCustomerId(), a.getVehiclePlate(),
-                    a.getServiceItemId(), a.getAppointmentDate(), a.getStatus()
-                });
-                count++;
+            if (!matchStatus || !matchDate) continue;
+
+            if (!searchQuery.isEmpty()) {
+                boolean match =
+                    a.getAppointmentId().toLowerCase().contains(searchQuery)
+                    || a.getCustomerId().toLowerCase().contains(searchQuery)
+                    || a.getVehiclePlate().toLowerCase().contains(searchQuery);
+                if (!match) continue;
             }
+
+            tableModel.addRow(new Object[]{
+                a.getAppointmentId(), a.getCustomerId(), a.getVehiclePlate(),
+                a.getServiceItemId(), a.getAppointmentDate(), a.getStatus()
+            });
+            count++;
         }
         countLabel.setText("Showing " + count + " records  |  " + completedCount + " Awaiting Payment");
-        if (formPanel != null) formPanel.setVisible(false);
+        if (formPanel != null) { setTableCompact(false); formPanel.setVisible(false); }
+        if (onDataChanged != null) onDataChanged.run();
     }
 
     // ─── Payment form ─────────────────────────────────────────────────────────
@@ -421,7 +489,7 @@ public class CounterStaffBilling extends JPanel {
         formApptIdLabel = UIComponent.createSectionLabel("Process Payment");
         headerRow.add(formApptIdLabel, BorderLayout.WEST);
         JButton closeBtn = UIComponent.createLinkButton("✕ Close");
-        closeBtn.addActionListener(e -> formPanel.setVisible(false));
+        closeBtn.addActionListener(e -> { setTableCompact(false); formPanel.setVisible(false); });
         headerRow.add(closeBtn, BorderLayout.EAST);
         section.add(headerRow);
 
@@ -438,6 +506,7 @@ public class CounterStaffBilling extends JPanel {
         twoCol.add(buildSummaryCard(), gbc);
 
         gbc.insets = new Insets(0, AppTheme.GAP_ITEM, 0, 0);
+        gbc.weightx = 0.6;
         gbc.gridx = 1;
         twoCol.add(buildPaymentInputCard(), gbc);
         section.add(twoCol);
@@ -447,110 +516,152 @@ public class CounterStaffBilling extends JPanel {
     private JPanel summaryApptId, summaryCustomer, summaryPlate,
                    summaryService, summaryDate, summaryApptStatus;
 
-    private JPanel buildSummaryCard() {
-        JPanel card = UIComponent.createCard();
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(UIComponent.createSectionLabel("Appointment Summary"));
-        summaryApptId     = UIComponent.createInfoRow("Appointment ID", "—");
-        summaryCustomer   = UIComponent.createInfoRow("Customer ID",    "—");
-        summaryPlate      = UIComponent.createInfoRow("Vehicle Plate",  "—");
-        summaryService    = UIComponent.createInfoRow("Service Item",   "—");
-        summaryDate       = UIComponent.createInfoRow("Date",           "—");
-        summaryApptStatus = UIComponent.createInfoRow("Status",         "—");
-        card.add(summaryApptId);     card.add(UIComponent.createRowDivider());
-        card.add(summaryCustomer);   card.add(UIComponent.createRowDivider());
-        card.add(summaryPlate);      card.add(UIComponent.createRowDivider());
-        card.add(summaryService);    card.add(UIComponent.createRowDivider());
-        card.add(summaryDate);       card.add(UIComponent.createRowDivider());
-        card.add(summaryApptStatus);
-        return card;
+private JPanel buildSummaryCard() {
+    JPanel card = UIComponent.createCard();
+    card.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    JLabel sectionLbl = UIComponent.createSectionLabel("Appointment Summary");
+    sectionLbl.setHorizontalAlignment(SwingConstants.LEFT);
+    sectionLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+    sectionLbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, sectionLbl.getPreferredSize().height));
+    card.add(sectionLbl);
+
+    summaryApptId     = UIComponent.createInfoRow("Appointment ID", "—");
+    summaryCustomer   = UIComponent.createInfoRow("Customer ID",    "—");
+    summaryPlate      = UIComponent.createInfoRow("Vehicle Plate",  "—");
+    summaryService    = UIComponent.createInfoRow("Service Item",   "—");
+    summaryDate       = UIComponent.createInfoRow("Date",           "—");
+    summaryApptStatus = UIComponent.createInfoRow("Status",         "—");
+
+    // Left-align BOTH the field name (WEST) and value (CENTER) labels in every row
+    for (JPanel row : new JPanel[]{summaryApptId, summaryCustomer, summaryPlate,
+                                   summaryService, summaryDate, summaryApptStatus}) {
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height + 8));
+
+        BorderLayout bl = (BorderLayout) row.getLayout();
+
+        Component west = bl.getLayoutComponent(BorderLayout.WEST);
+        if (west instanceof JLabel) {
+            ((JLabel) west).setHorizontalAlignment(SwingConstants.LEFT);
+        }
+
+        Component center = bl.getLayoutComponent(BorderLayout.CENTER);
+        if (center instanceof JLabel) {
+            ((JLabel) center).setHorizontalAlignment(SwingConstants.LEFT);
+        }
     }
 
-    private JPanel buildPaymentInputCard() {
-        JPanel card = UIComponent.createCard();
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(UIComponent.createSectionLabel("Payment Details"));
+    card.add(summaryApptId);     card.add(UIComponent.createRowDivider());
+    card.add(summaryCustomer);   card.add(UIComponent.createRowDivider());
+    card.add(summaryPlate);      card.add(UIComponent.createRowDivider());
+    card.add(summaryService);    card.add(UIComponent.createRowDivider());
+    card.add(summaryDate);       card.add(UIComponent.createRowDivider());
+    card.add(summaryApptStatus);
+    return card;
+}
 
-        // ── Amount (read-only) ────────────────────────────────────────────────
-        card.add(UIComponent.createFieldLabel("AMOUNT (RM)"));
-        card.add(UIComponent.verticalGap(4));
-        amountField = UIComponent.createTextField("—");
-        amountField.setEditable(false);
-        amountField.setBackground(new Color(245, 245, 247));
-        amountField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(amountField);
-        card.add(UIComponent.verticalGap(8));
+private JPanel buildPaymentInputCard() {
+    JPanel card = UIComponent.createCard();
+    card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // ── Additional charge ─────────────────────────────────────────────────
-        card.add(UIComponent.createFieldLabel("ADDITIONAL CHARGE (RM)"));
-        card.add(UIComponent.verticalGap(4));
-        additionalChargeField = UIComponent.createTextField("0.00");
-        additionalChargeField.setText("0.00");
-        additionalChargeField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(additionalChargeField);
-        card.add(UIComponent.verticalGap(10));
+    JLabel sectionLbl = UIComponent.createSectionLabel("Payment Details");
+    sectionLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+    sectionLbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, sectionLbl.getPreferredSize().height));
+    card.add(sectionLbl);
 
-        // ── Total row ─────────────────────────────────────────────────────────
-        JPanel totalRow = new JPanel();
-        totalRow.setLayout(new BoxLayout(totalRow, BoxLayout.X_AXIS));
-        totalRow.setOpaque(false);
-        totalRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        totalRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+    // ── Amount (read-only) ────────────────────────────────────────────────
+    JLabel amountLbl = UIComponent.createFieldLabel("AMOUNT (RM)");
+    amountLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+    amountLbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, amountLbl.getPreferredSize().height));
+    card.add(amountLbl);
+    card.add(UIComponent.verticalGap(4));
+    amountField = UIComponent.createTextField("—");
+    amountField.setEditable(false);
+    amountField.setBackground(new Color(245, 245, 247));
+    amountField.setAlignmentX(Component.LEFT_ALIGNMENT);
+    amountField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+    card.add(amountField);
+    card.add(UIComponent.verticalGap(8));
 
-        JLabel totalLbl = new JLabel("TOTAL (RM)");
-        totalLbl.setFont(AppTheme.FONT_LABEL);
-        totalLbl.setForeground(AppTheme.TEXT_SECONDARY);
+    // ── Additional charge ─────────────────────────────────────────────────
+    JLabel extraLbl = UIComponent.createFieldLabel("ADDITIONAL CHARGE (RM)");
+    extraLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+    extraLbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, extraLbl.getPreferredSize().height));
+    card.add(extraLbl);
+    card.add(UIComponent.verticalGap(4));
+    additionalChargeField = UIComponent.createTextField("0.00");
+    additionalChargeField.setText("0.00");
+    additionalChargeField.setAlignmentX(Component.LEFT_ALIGNMENT);
+    additionalChargeField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+    card.add(additionalChargeField);
+    card.add(UIComponent.verticalGap(10));
 
-        totalAmountLabel = new JLabel("0.00");
-        totalAmountLabel.setFont(AppTheme.FONT_HEADING_3);
-        totalAmountLabel.setForeground(AppTheme.PRIMARY);
-        totalAmountLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
+    // ── Total row ─────────────────────────────────────────────────────────
+    JPanel totalRow = new JPanel();
+    totalRow.setLayout(new BoxLayout(totalRow, BoxLayout.X_AXIS));
+    totalRow.setOpaque(false);
+    totalRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+    totalRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        totalRow.add(totalLbl);
-        totalRow.add(Box.createHorizontalGlue());
-        totalRow.add(totalAmountLabel);
-        card.add(totalRow);
-        card.add(UIComponent.verticalGap(10));
+    JLabel totalLbl = new JLabel("TOTAL (RM)");
+    totalLbl.setFont(AppTheme.FONT_LABEL);
+    totalLbl.setForeground(AppTheme.TEXT_SECONDARY);
 
-        KeyAdapter totalUpdater = new KeyAdapter() {
-            @Override public void keyReleased(KeyEvent e) { recalcTotal(); }
-        };
-        amountField.addKeyListener(totalUpdater);
-        additionalChargeField.addKeyListener(totalUpdater);
+    totalAmountLabel = new JLabel("0.00");
+    totalAmountLabel.setFont(AppTheme.FONT_HEADING_3);
+    totalAmountLabel.setForeground(AppTheme.PRIMARY);
+    totalAmountLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
 
-        // ── Separator ─────────────────────────────────────────────────────────
-        card.add(UIComponent.createSeparator());
-        card.add(UIComponent.verticalGap(10));
+    totalRow.add(totalLbl);
+    totalRow.add(Box.createHorizontalGlue());
+    totalRow.add(totalAmountLabel);
+    card.add(totalRow);
+    card.add(UIComponent.verticalGap(10));
 
-        // ── Payment method ────────────────────────────────────────────────────
-        card.add(UIComponent.createFieldLabel("PAYMENT METHOD"));
-        card.add(UIComponent.verticalGap(4));
-        paymentMethodCombo = UIComponent.createComboBox(
-            new String[]{"Cash", "Online Banking / FPX", "Debit / Credit Card", "E-Wallet"});
-        paymentMethodCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(paymentMethodCombo);
-        card.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
+    KeyAdapter totalUpdater = new KeyAdapter() {
+        @Override public void keyReleased(KeyEvent e) { recalcTotal(); }
+    };
+    amountField.addKeyListener(totalUpdater);
+    additionalChargeField.addKeyListener(totalUpdater);
 
-        // ── Action buttons — sized to fit their labels ─────────────────────────
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.GAP_ITEM, 0));
-        btnRow.setOpaque(false);
-        btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+    // ── Separator ─────────────────────────────────────────────────────────
+    JSeparator sep = UIComponent.createSeparator();
+    sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+    sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+    card.add(sep);
+    card.add(UIComponent.verticalGap(10));
 
-        JButton confirmBtn = UIComponent.createPrimaryButton("Confirm Payment");
-        confirmBtn.setPreferredSize(new Dimension(162, 36));
-        confirmBtn.setMaximumSize(new Dimension(162, 36));
-        confirmBtn.addActionListener(e -> handleConfirmPayment());
+    // ── Payment method ────────────────────────────────────────────────────
+    JLabel methodLbl = UIComponent.createFieldLabel("PAYMENT METHOD");
+    methodLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+    methodLbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, methodLbl.getPreferredSize().height));
+    card.add(methodLbl);
+    card.add(UIComponent.verticalGap(4));
+    paymentMethodCombo = UIComponent.createComboBox(
+        new String[]{"Cash", "Online Banking / FPX", "Debit / Credit Card", "E-Wallet"});
+    paymentMethodCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+    paymentMethodCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+    card.add(paymentMethodCombo);
+    card.add(UIComponent.verticalGap(AppTheme.GAP_SECTION));
 
-        JButton cancelBtn = UIComponent.createOutlineButton("Cancel");
-        cancelBtn.setPreferredSize(new Dimension(100, 36));
-        cancelBtn.setMaximumSize(new Dimension(100, 36));
-        cancelBtn.addActionListener(e -> formPanel.setVisible(false));
+    // ── Action buttons — full width, equal size ───────────────────────────
+    JPanel btnRow = new JPanel(new GridLayout(1, 2, AppTheme.GAP_ITEM, 0));
+    btnRow.setOpaque(false);
+    btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+    btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
 
-        btnRow.add(confirmBtn);
-        btnRow.add(cancelBtn);
-        card.add(btnRow);
-        return card;
-    }
+    JButton confirmBtn = UIComponent.createPrimaryButton("Confirm Payment");
+    confirmBtn.addActionListener(e -> handleConfirmPayment());
+
+    JButton cancelBtn = UIComponent.createOutlineButton("Cancel");
+    cancelBtn.addActionListener(e -> { setTableCompact(false); formPanel.setVisible(false); });
+
+    btnRow.add(confirmBtn);
+    btnRow.add(cancelBtn);
+    card.add(btnRow);
+    return card;
+}
 
     // ─── Logic ────────────────────────────────────────────────────────────────
 
@@ -650,6 +761,29 @@ public class CounterStaffBilling extends JPanel {
             UIComponent.DialogType.WARNING, message, null, null);
     }
 
+    /** Shrink the table to ~4 visible rows when the payment form is open, restore when closed. */
+    private void setTableCompact(boolean compact) {
+        if (tableScrollPane == null) return;
+        int rowH  = apptTable.getRowHeight();   // e.g. 52
+        int hdrH  = apptTable.getTableHeader().getPreferredSize().height; // 38
+        int sbarH = 30; // approximate status-bar height
+        if (compact) {
+            int compactH = hdrH + rowH * 4 + sbarH; // show 4 rows
+            tableScrollPane.setPreferredSize(new Dimension(tableScrollPane.getWidth(), compactH));
+            tableScrollPane.setMinimumSize  (new Dimension(0,                          compactH));
+            tableScrollPane.setMaximumSize  (new Dimension(Integer.MAX_VALUE,          compactH));
+        } else {
+            tableScrollPane.setPreferredSize(null);
+            tableScrollPane.setMinimumSize  (null);
+            tableScrollPane.setMaximumSize  (new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        }
+        // Revalidate the whole page so BoxLayout recalculates sizes
+        SwingUtilities.invokeLater(() -> {
+            Container top = SwingUtilities.getAncestorOfClass(JPanel.class, tableScrollPane);
+            if (top != null) { top.revalidate(); top.repaint(); }
+        });
+    }
+
     private void openPaymentForm(int row) {
         selectedApptId = tableModel.getValueAt(row, 0).toString();
         formApptIdLabel.setText("Process Payment — " + selectedApptId);
@@ -671,11 +805,8 @@ public class CounterStaffBilling extends JPanel {
         additionalChargeField.setText("0.00");
         recalcTotal();
         paymentMethodCombo.setSelectedIndex(0);
+        setTableCompact(true);
         formPanel.setVisible(true);
-        SwingUtilities.invokeLater(() -> {
-            JScrollPane sp = (JScrollPane) SwingUtilities.getAncestorOfClass(JScrollPane.class, formPanel);
-            if (sp != null) sp.getVerticalScrollBar().setValue(sp.getVerticalScrollBar().getMaximum());
-        });
     }
 
     private void updateInfoRow(JPanel row, String value) {
