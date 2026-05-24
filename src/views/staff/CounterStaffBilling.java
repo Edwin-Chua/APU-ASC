@@ -707,7 +707,7 @@ private JPanel buildPaymentInputCard() {
                 {"Method",      method},
             },
             new UIComponent.DialogAction[]{
-                new UIComponent.DialogAction("Generate Receipt (PDF)", UIComponent.DialogActionStyle.PRIMARY,
+                new UIComponent.DialogAction("Generate Receipt", UIComponent.DialogActionStyle.PRIMARY,
                     () -> generateReceipt(paymentFinal), new Dimension(190, 38)),
                 new UIComponent.DialogAction("Close", UIComponent.DialogActionStyle.OUTLINE, null,
                     new Dimension(80, 34)),

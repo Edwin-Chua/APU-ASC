@@ -956,7 +956,7 @@ public class CounterStaffViewAppointment extends JPanel {
             "Cancel appointment " + selectedApptId + "? The assigned technician will be marked Available again.",
             null,
             new UIComponent.DialogAction[]{
-                new UIComponent.DialogAction("Cancel Appointment", UIComponent.DialogActionStyle.DANGER, () -> {
+                new UIComponent.DialogAction("Confirm", UIComponent.DialogActionStyle.PRIMARY, () -> {
                     boolean ok = appointmentDAO.cancelAppointment(selectedApptId);
                     if (ok) {
                         if (appt != null && appt.getTechnicianId() != null
