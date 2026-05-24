@@ -11,6 +11,7 @@ import views.shared.AppTheme;
 import views.shared.UIComponent;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import javax.swing.plaf.LayerUI;
 import javax.swing.table.*;
 import java.awt.*;
@@ -49,6 +50,7 @@ public class CounterStaffCreateAppointment extends JPanel {
     private JLabel slotsDateLabel;
 
     private String staffId = "CS001";
+    private boolean isInitialized = false;  // Track if component is fully initialized
 
     private static final String[] TIME_SLOTS = {
         "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
@@ -77,6 +79,23 @@ public class CounterStaffCreateAppointment extends JPanel {
         List<Appointment> appts = appointmentDAO.getAllAppointments();
         refreshSlots(appts);
         refreshTechCombo(appts);
+        
+        // Reload data every time the page becomes visible (but not during initial construction)
+        addAncestorListener(new AncestorListener() {
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                if (isInitialized) {
+                    refresh();
+                }
+            }
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {}
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+        });
+        
+        // Mark as initialized after constructor completes
+        isInitialized = true;
     }
 
     public void setStaffId(String id) { this.staffId = id; }

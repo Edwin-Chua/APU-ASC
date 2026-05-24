@@ -75,6 +75,14 @@ public class CounterStaffViewAppointment extends JPanel {
 
         add(buildContent(), BorderLayout.CENTER);
         loadTable();
+        
+        // Reload table every time the component becomes visible
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                loadTable();
+            }
+        });
     }
 
     public void setStaffId(String id) { this.staffId = id; }
